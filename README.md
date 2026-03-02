@@ -18,6 +18,10 @@ You play the Dandelions against the Wind (computer). Each round you plant one fl
 - No accounts, no ads, no tracking
 - Installable as an offline app — no internet needed after first visit
 
+## Learning Resource
+
+If you're a Python programmer curious about the JavaScript behind this game, there's a walkthrough of the core engine: [JavaScript Tutorial for Python Developers](https://mycarta.github.io/Dandelions/docs/tutorial-js.html)
+
 ## Play
 
 **On your phone:** Visit [mycarta.github.io/Dandelions](https://mycarta.github.io/Dandelions/) and tap "Add to Home Screen" — it works offline after that.
