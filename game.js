@@ -324,7 +324,9 @@ function handleCellClick(row, col) {
       if (!(key in cellRotation)) cellRotation[key] = Math.round(Math.random() * 80 - 40);
       renderBoardFrom(tutState.board);
       animateFlowerPop(row, col);
-      advanceTutStep();
+      // Defer the advance so the current event-handler and paint cycle
+      // both complete before showTutStep mutates the DOM again.
+      setTimeout(() => { if (tutState.active) advanceTutStep(); }, 0);
     }
     return;
   }
@@ -546,23 +548,25 @@ const TUT_STEPS = [
     msg:      'The Wind blows South! Both flowers spread seeds downward.',
     btnLabel: 'Interesting! \u2192',
   },
-  // Step 5 ── Third flower (bottom-left corner)
+  // Step 5 ── Third flower (not on the (4,0)–(2,2)–(0,4) diagonal)
   //   Board so far: flowers at (2,2) and (0,4);
-  //   seeds at (2,0),(2,1),(1,4),(2,4),(3,4),(4,4),(3,2),(4,2)
-  //   The square at (1,3) is GUARANTEED:
-  //     (2,2) blowing NE reaches (1,3) ✓
-  //     (0,4) blowing SW reaches (1,3) ✓
-  //   Wind can skip one of those directions but never both.
+  //   seeds at (2,0),(2,1) from W; (3,2),(4,2),(1,4),(2,4),(3,4),(4,4) from S.
+  //   (4,1) is empty. ✓
+  //
+  //   Guaranteed square (1,3):
+  //     Flower (2,2) going NE  → (1,3) empty → seed ✓
+  //     Flower (0,4) going SW  → (1,3) empty → seed ✓
+  //   Both NE and SW are still unused after W and S. ✓
   {
     type:      'tap',
-    highlight: { r: 4, c: 0 },
-    msg:       '\uD83D\uDC46 Plant a third flower here. \uD83D\uDCA1 Before you tap — look at the square diagonally between your two flowers (second row, fourth column). TWO of your flowers can already reach it from different directions. That square is guaranteed no matter what the Wind does next!',
+    highlight: { r: 4, c: 1 },
+    msg:       '\uD83D\uDC46 Plant a third flower here. \uD83D\uDCA1 While you decide — look at the square in row\u00a02, column\u00a04 (second from top, fourth from left). Your centre flower can reach it going north-east, AND your corner flower can reach it going south-west. The Wind can only skip one of those directions\u00a0— so that square is already guaranteed!',
   },
-  // Step 6 ── Wind NE  → visibly fills (1,3) from flower (2,2) + (3,1) from flower (4,0)
+  // Step 6 ── Wind NE  → fills (1,3) from flower (2,2); (0,4)→SW would also cover it
   {
     type:     'wind',
     dir:      'NE',
-    msg:      'The Wind blows NE! See the square diagonally between your first two flowers? It just filled \u2014 and your second flower could have reached it from the SW too. The Wind could skip one of those directions, but never both. That square was guaranteed!',
+    msg:      'The Wind blows north-east! See row\u00a02, column\u00a04? It just filled — your centre flower pushed a seed there. But it didn\u2019t matter which way the Wind chose: your corner flower would have filled it from the south-west too. Two flowers, two paths — that square was never in doubt!',
     btnLabel: 'Makes sense! \u2192',
   },
   // Step 7 ── Final message
