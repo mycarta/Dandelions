@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Generate Dandelions Icons</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #111; color: #ccc;
+           display: flex; flex-direction: column; align-items: center;
+           gap: 24px; padding: 40px 16px; }
+    canvas { border-radius: 22%; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+    a.dl  { display: inline-block; margin-top: 8px; padding: 0.5em 1.6em;
+            background: #2e7d32; color: #fff; border-radius: 999px;
+            text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+    a.dl:hover { background: #388e3c; }
+    h2 { margin: 0; color: #f5e642; }
+    .pair { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  </style>
+</head>
+<body>
+  <h1 style="color:#f5e642">Dandelions — Icon Generator</h1>
+  <p>Click a download link, save the file, then rename it to the correct filename.</p>
+
+  <div class="pair">
+    <h2>512 × 512</h2>
+    <canvas id="c512" width="512" height="512"></canvas>
+    <a class="dl" id="dl512" download="icon-512.png">⬇ Download icon-512.png</a>
+  </div>
+
+  <div class="pair">
+    <h2>192 × 192</h2>
+    <canvas id="c192" width="192" height="192"></canvas>
+    <a class="dl" id="dl192" download="icon-192.png">⬇ Download icon-192.png</a>
+  </div>
+
+  <script>
+    function drawIcon(canvas) {
+      const s   = canvas.width;
+      const ctx = canvas.getContext('2d');
+
+      // Background circle
+      ctx.fillStyle = '#1a3a1a';
+      ctx.fillRect(0, 0, s, s);
+      ctx.beginPath();
+      ctx.arc(s / 2, s / 2, s / 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a3a1a';
+      ctx.fill();
+
+      // Clip to circle
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(s / 2, s / 2, s / 2, 0, Math.PI * 2);
+      ctx.clip();
+
+      // Gold asterisk ✱
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle    = '#f5e642';
+      ctx.font         = `bold ${Math.round(s * 0.62)}px serif`;
+
+      // Subtle drop shadow
+      ctx.shadowColor   = 'rgba(0,0,0,0.55)';
+      ctx.shadowBlur    = Math.round(s * 0.04);
+      ctx.shadowOffsetY = Math.round(s * 0.02);
+
+      ctx.fillText('\u2731', s / 2, s / 2 + s * 0.02);
+
+      ctx.restore();
+    }
+
+    const c512 = document.getElementById('c512');
+    const c192 = document.getElementById('c192');
+
+    drawIcon(c512);
+    drawIcon(c192);
+
+    // Wire up download links once canvases are drawn
+    document.getElementById('dl512').href = c512.toDataURL('image/png');
+    document.getElementById('dl192').href = c192.toDataURL('image/png');
+  </script>
+</body>
+</html>
