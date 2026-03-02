@@ -100,6 +100,10 @@ function printBoard(board) {
 // ── Game State ───────────────────────────────────────────────────────────────
 
 let board, round, usedDirections, lastUsedDirection, gameOver, inputLocked;
+let difficulty = 'easy';   // 'easy' | 'hard' — persists across resets
+
+// Per-cell random rotation so each flower looks slightly different
+const cellRotation = {};
 
 function initState() {
   board             = createBoard();
@@ -108,6 +112,8 @@ function initState() {
   lastUsedDirection = null;
   gameOver          = false;
   inputLocked       = false;
+  Object.keys(cellRotation).forEach(k => delete cellRotation[k]);
+  // difficulty is intentionally not reset here
 }
 
 // ── SVG helpers ──────────────────────────────────────────────────────────────
@@ -236,12 +242,18 @@ function renderBoard() {
       if (val === 0) {
         g.classList.add('empty');
         text.textContent = '';
+        text.style.transform = '';
       } else if (val === 1) {
         g.classList.add('flower');
         text.textContent = '\u2731';   // ✱ heavy asterisk
+        // Assign a random rotation once per cell so flowers look unique
+        const key = `${r}-${c}`;
+        if (!(key in cellRotation)) cellRotation[key] = Math.round(Math.random() * 80 - 40);
+        text.style.transform = `rotate(${cellRotation[key]}deg)`;
       } else {
         g.classList.add('seed');
         text.textContent = '\u2022';   // • bullet
+        text.style.transform = '';
       }
     }
   }
@@ -269,9 +281,54 @@ function setStatus(msg) {
   document.getElementById('status').textContent = msg;
 }
 
+// ── Wind AI ──────────────────────────────────────────────────────────────────
+
+// Greedy strategy: pick the unused direction that produces the FEWEST new seeds.
+// Ties are broken randomly.
+function pickGreedyDirection(board, usedDirections) {
+  const unused = getUnusedDirections(usedDirections);
+
+  let minSeeds = Infinity;
+  let best     = [];
+
+  for (const dir of unused) {
+    const after    = blowWind(board, dir);
+    let   newSeeds = 0;
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 5; c++) {
+        if (board[r][c] === 0 && after[r][c] === 2) newSeeds++;
+      }
+    }
+    if (newSeeds < minSeeds) {
+      minSeeds = newSeeds;
+      best     = [dir];
+    } else if (newSeeds === minSeeds) {
+      best.push(dir);
+    }
+  }
+
+  return best[Math.floor(Math.random() * best.length)];
+}
+
 // ── Game Logic ───────────────────────────────────────────────────────────────
 
 function handleCellClick(row, col) {
+  // Tutorial tap interception
+  if (tutState.active) {
+    const step = TUT_STEPS[tutState.step];
+    if (step && step.type === 'tap') {
+      if (row !== step.highlight.r || col !== step.highlight.c) return;
+      clearTutHighlight();
+      tutState.board = placeFlower(tutState.board, row, col);
+      const key = `tut-${row}-${col}`;
+      if (!(key in cellRotation)) cellRotation[key] = Math.round(Math.random() * 80 - 40);
+      renderBoardFrom(tutState.board);
+      animateFlowerPop(row, col);
+      advanceTutStep();
+    }
+    return;
+  }
+
   if (gameOver || inputLocked)  return;
   if (board[row][col] === 1)    return;   // already a flower — invalid tap
 
@@ -280,6 +337,7 @@ function handleCellClick(row, col) {
 
   board = placeFlower(board, row, col);
   renderBoard();
+  animateFlowerPop(row, col);
   renderRound();
   setStatus('Wind is gathering\u2026');
 
@@ -289,12 +347,17 @@ function handleCellClick(row, col) {
 
 function windTurn() {
   const unused = getUnusedDirections(usedDirections);
-  const dir    = unused[Math.floor(Math.random() * unused.length)];
+  const dir = difficulty === 'hard'
+    ? pickGreedyDirection(board, usedDirections)
+    : unused[Math.floor(Math.random() * unused.length)];
+
   usedDirections.push(dir);
   lastUsedDirection = dir;   // remember for the "last-used" highlight
 
+  const beforeBoard = copyBoard(board);
   board = blowWind(board, dir);
   renderBoard();
+  animateSeedsBlow(beforeBoard, dir);
   renderCompass(dir);
   setStatus(`Wind blows ${dir}!`);
 
@@ -319,20 +382,329 @@ function endGame() {
   renderCompass(null);
 
   if (checkWin(board)) {
-    setStatus('Dandelions win! All 25 squares covered!');
+    setStatus('\uD83C\uDF3B Dandelions win! All 25 squares covered!');
     document.getElementById('app').classList.add('win');
+    setTimeout(animateWave,    100);
+    setTimeout(launchConfetti, 400);
   } else {
     const empty = board.flat().filter(c => c === 0).length;
     setStatus(`Wind wins! ${empty} empty square${empty !== 1 ? 's' : ''} remain.`);
     document.getElementById('app').classList.add('lose');
+    setTimeout(animateWilt, 200);
   }
+}
+
+// ── Animation Helpers ────────────────────────────────────────────────────────
+
+// Pop a newly placed flower (SVG text) from scale 0 → 1, preserving its rotation.
+function animateFlowerPop(r, c) {
+  const text = document.querySelector(`#cell-${r}-${c} text`);
+  if (!text) return;
+  // Read the rotation already set by renderBoard/renderBoardFrom and thread it
+  // into the keyframe via a CSS custom property so the pop honours the angle.
+  const match = (text.style.transform || '').match(/rotate\((-?\d+)deg\)/);
+  const rotDeg = match ? match[1] : '0';
+  text.style.setProperty('--fr', `${rotDeg}deg`);
+  text.classList.remove('flower-pop');
+  void text.getBoundingClientRect();
+  text.classList.add('flower-pop');
+  text.addEventListener('animationend', () => {
+    text.classList.remove('flower-pop');
+    text.style.removeProperty('--fr');
+    text.style.transform = `rotate(${rotDeg}deg)`;   // reassert after keyframe
+  }, { once: true });
+}
+
+// Stagger-animate seed cells appearing in order of distance along the wind ray.
+// Call AFTER renderBoard() so the DOM already has the new seed symbols.
+function animateSeedsBlow(beforeBoard, dir) {
+  const [dr, dc] = DIRECTIONS[dir];
+  const schedule = {};   // "r-c" → distance step from nearest source flower
+
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      if (beforeBoard[r][c] === 1) {
+        let step = 1, nr = r + dr, nc = c + dc;
+        while (nr >= 0 && nr < 5 && nc >= 0 && nc < 5) {
+          if (beforeBoard[nr][nc] === 0) {
+            const key = `${nr}-${nc}`;
+            if (!(key in schedule) || step < schedule[key]) schedule[key] = step;
+          }
+          step++; nr += dr; nc += dc;
+        }
+      }
+    }
+  }
+
+  // Apply in the next frame so the DOM paint for renderBoard() has settled.
+  requestAnimationFrame(() => {
+    for (const [key, step] of Object.entries(schedule)) {
+      const [r, c] = key.split('-').map(Number);
+      const text = document.querySelector(`#cell-${r}-${c} text`);
+      if (!text) continue;
+      text.style.animationDelay = `${(step - 1) * 55}ms`;
+      text.classList.remove('seed-appear');
+      void text.getBoundingClientRect();
+      text.classList.add('seed-appear');
+      text.addEventListener('animationend', () => {
+        text.classList.remove('seed-appear');
+        text.style.animationDelay = '';
+      }, { once: true });
+    }
+  });
+}
+
+// Win: brief ripple-wave across all cells.
+function animateWave() {
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      const rect = document.querySelector(`#cell-${r}-${c} rect`);
+      if (!rect) continue;
+      rect.style.animationDelay = `${(r + c) * 55}ms`;
+      rect.classList.remove('cell-wave');
+      void rect.getBoundingClientRect();
+      rect.classList.add('cell-wave');
+      rect.addEventListener('animationend', () => {
+        rect.classList.remove('cell-wave');
+        rect.style.animationDelay = '';
+      }, { once: true });
+    }
+  }
+}
+
+// Win: confetti dots float upward out of the grid area.
+function launchConfetti() {
+  const container = document.getElementById('confetti');
+  if (!container) return;
+  container.innerHTML = '';
+  const palette = ['#f5e642','#7dbe40','#c5e8c5','#f5a623','#ffffff','#a8ffa8'];
+  for (let i = 0; i < 48; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'confetti-dot';
+    const sz = 4 + Math.random() * 7;
+    dot.style.cssText = [
+      `left:${3 + Math.random() * 94}%`,
+      `animation-delay:${(Math.random() * 1.4).toFixed(2)}s`,
+      `animation-duration:${(1.4 + Math.random() * 1.2).toFixed(2)}s`,
+      `width:${sz.toFixed(1)}px`,
+      `height:${sz.toFixed(1)}px`,
+      `background:${palette[Math.floor(Math.random() * palette.length)]}`,
+      `border-radius:${Math.random() > 0.45 ? '50%' : '3px'}`,
+    ].join(';');
+    container.appendChild(dot);
+  }
+  setTimeout(() => { container.innerHTML = ''; }, 3800);
+}
+
+// Loss: flowers droop gently.
+function animateWilt() {
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      if (board[r][c] === 1) {
+        const text = document.querySelector(`#cell-${r}-${c} text`);
+        if (!text) continue;
+        text.classList.remove('flower-wilt');
+        void text.getBoundingClientRect();
+        text.classList.add('flower-wilt');
+      }
+    }
+  }
+}
+
+// ── Tutorial ─────────────────────────────────────────────────────────────────
+
+const TUT_STEPS = [
+  // Step 0 ── Welcome
+  {
+    type:     'message',
+    msg:      'Welcome to Dandelions! \uD83C\uDF3B Plant flowers and the Wind will spread seeds. Cover all 25 squares to win!',
+    btnLabel: 'Show me how \u2192',
+  },
+  // Step 1 ── First flower (centre)
+  {
+    type:      'tap',
+    highlight: { r: 2, c: 2 },
+    msg:       '\uD83D\uDC46 Tap the glowing square to plant your first flower.',
+  },
+  // Step 2 ── Wind W   → seeds at (2,1) and (2,0)
+  {
+    type:     'wind',
+    dir:      'W',
+    msg:      'The Wind blows West! Seeds spread left from your flower along the row.',
+    btnLabel: 'Got it \u2192',
+  },
+  // Step 3 ── Second flower (top-right corner)
+  {
+    type:      'tap',
+    highlight: { r: 0, c: 4 },
+    msg:       '\uD83D\uDC46 Now plant a flower in the top-right corner.',
+  },
+  // Step 4 ── Wind S   → seeds fill column 4 and column 2 downward
+  {
+    type:     'wind',
+    dir:      'S',
+    msg:      'The Wind blows South! Both flowers spread seeds downward.',
+    btnLabel: 'Interesting! \u2192',
+  },
+  // Step 5 ── Third flower (bottom-left corner)
+  //   Board so far: flowers at (2,2) and (0,4);
+  //   seeds at (2,0),(2,1),(1,4),(2,4),(3,4),(4,4),(3,2),(4,2)
+  //   The square at (1,3) is GUARANTEED:
+  //     (2,2) blowing NE reaches (1,3) ✓
+  //     (0,4) blowing SW reaches (1,3) ✓
+  //   Wind can skip one of those directions but never both.
+  {
+    type:      'tap',
+    highlight: { r: 4, c: 0 },
+    msg:       '\uD83D\uDC46 Plant a third flower here. \uD83D\uDCA1 Before you tap — look at the square diagonally between your two flowers (second row, fourth column). TWO of your flowers can already reach it from different directions. That square is guaranteed no matter what the Wind does next!',
+  },
+  // Step 6 ── Wind NE  → visibly fills (1,3) from flower (2,2) + (3,1) from flower (4,0)
+  {
+    type:     'wind',
+    dir:      'NE',
+    msg:      'The Wind blows NE! See the square diagonally between your first two flowers? It just filled \u2014 and your second flower could have reached it from the SW too. The Wind could skip one of those directions, but never both. That square was guaranteed!',
+    btnLabel: 'Makes sense! \u2192',
+  },
+  // Step 7 ── Final message
+  {
+    type:     'message',
+    msg:      '3 rounds down, 4 to go in a real game. Find more of these guaranteed squares and spend your remaining flowers on the truly uncertain spots. You\u2019ve got this! \uD83C\uDF3B',
+    btnLabel: 'Play for real! \uD83C\uDF3B',
+  },
+];
+
+let tutState = { active: false, step: 0, board: null, usedDirs: [] };
+
+function startTutorial() {
+  // Freeze any running game
+  inputLocked = true;
+  tutState = { active: true, step: 0, board: createBoard(), usedDirs: [] };
+  renderCompass(null);
+  renderBoardFrom(tutState.board);
+  showTutStep(0);
+}
+
+function showTutStep(n) {
+  tutState.step = n;
+  if (n >= TUT_STEPS.length) { endTutorial(); return; }
+  const step = TUT_STEPS[n];
+
+  clearTutHighlight();
+  renderBoardFrom(tutState.board);
+
+  const panel  = document.getElementById('tut-panel');
+  const msgEl  = document.getElementById('tut-msg');
+  const actEl  = document.getElementById('tut-actions');
+  const overlay = document.getElementById('tut-overlay');
+
+  panel.hidden  = false;
+  overlay.hidden = false;
+
+  // Update message (swap for instructions that live over the grid on 'tap' steps)
+  if (step.type === 'tap') {
+    msgEl.textContent = step.msg;
+    actEl.innerHTML   = '';
+  } else {
+    msgEl.textContent = step.msg;
+    actEl.innerHTML   = '';
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type      = 'button';
+    nextBtn.className = 'tut-btn';
+    nextBtn.textContent = step.btnLabel || 'Next \u2192';
+    nextBtn.addEventListener('click', () => {
+      nextBtn.disabled = true;
+      if (step.type === 'wind') {
+        runTutWind(step.dir, advanceTutStep);
+      } else if (step.type === 'message' && n === TUT_STEPS.length - 1) {
+        endTutorial();
+      } else {
+        advanceTutStep();
+      }
+    }, { once: true });
+    actEl.appendChild(nextBtn);
+  }
+
+  // Always show skip
+  const skipBtn = document.createElement('button');
+  skipBtn.type      = 'button';
+  skipBtn.className = 'tut-btn tut-skip';
+  skipBtn.textContent = 'Skip tutorial';
+  skipBtn.addEventListener('click', endTutorial, { once: true });
+  actEl.appendChild(skipBtn);
+
+  if (step.type === 'tap') setTutHighlight(step.highlight.r, step.highlight.c);
+}
+
+function advanceTutStep() { showTutStep(tutState.step + 1); }
+
+function runTutWind(dir, cb) {
+  tutState.usedDirs.push(dir);
+  const before = copyBoard(tutState.board);
+  tutState.board = blowWind(tutState.board, dir);
+  renderBoardFrom(tutState.board);
+  animateSeedsBlow(before, dir);
+
+  // Flash compass rose
+  const dg = document.getElementById(`dir-${dir}`);
+  if (dg) {
+    dg.className.baseVal = 'dir-group active';
+    setTimeout(() => { dg.className.baseVal = 'dir-group last-used'; }, 1400);
+  }
+  setTimeout(cb, 1500);
+}
+
+function setTutHighlight(r, c) {
+  document.getElementById(`cell-${r}-${c}`)?.classList.add('tut-highlight');
+}
+
+function clearTutHighlight() {
+  document.querySelectorAll('.tut-highlight').forEach(el => el.classList.remove('tut-highlight'));
+}
+
+// Render an arbitrary board object (used during tutorial).
+function renderBoardFrom(brd) {
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      const g    = document.getElementById(`cell-${r}-${c}`);
+      const text = g.querySelector('text');
+      const val  = brd[r][c];
+      g.className.baseVal = 'cell';
+
+      if (val === 0) {
+        g.classList.add('empty');
+        text.textContent   = '';
+        text.style.transform = '';
+      } else if (val === 1) {
+        g.classList.add('flower');
+        text.textContent = '\u2731';
+        const key = `tut-${r}-${c}`;
+        if (!(key in cellRotation)) cellRotation[key] = Math.round(Math.random() * 80 - 40);
+        text.style.transform = `rotate(${cellRotation[key]}deg)`;
+      } else {
+        g.classList.add('seed');
+        text.textContent   = '\u2022';
+        text.style.transform = '';
+      }
+    }
+  }
+}
+
+function endTutorial() {
+  tutState.active = false;
+  clearTutHighlight();
+  document.getElementById('tut-overlay').hidden = true;
+  document.getElementById('tut-panel').hidden   = true;
+  renderCompass(null);
+  resetGame();
 }
 
 // ── Reset ────────────────────────────────────────────────────────────────────
 
 function resetGame() {
   document.getElementById('app').classList.remove('win', 'lose');
-  initState();
+  document.getElementById('confetti').innerHTML = '';
+  initState();   // also clears cellRotation
   renderBoard();
   renderCompass(null);
   document.getElementById('round-counter').textContent = 'Round 1 of 7';
@@ -348,6 +720,19 @@ document.addEventListener('DOMContentLoaded', () => {
   renderBoard();
   renderCompass(null);
   document.getElementById('reset-btn').addEventListener('click', resetGame);
+
+  // Tutorial button
+  document.getElementById('tutorial-btn').addEventListener('click', startTutorial);
+
+  // Difficulty toggle
+  document.querySelectorAll('.diff-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      difficulty = btn.dataset.diff;
+      document.querySelectorAll('.diff-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.diff === difficulty)
+      );
+    });
+  });
 
   // How to Play toggle (mobile only — hidden via CSS on wide screens)
   const htpToggle = document.getElementById('htp-toggle');

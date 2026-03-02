@@ -13,15 +13,32 @@
       <header>
         <h1>Dandelions</h1>
         <div id="round-counter">Round 1 of 7</div>
+        <div id="header-controls">
+          <div id="difficulty" role="group" aria-label="Wind difficulty">
+            <button class="diff-btn active" data-diff="easy" type="button">Easy Wind</button>
+            <button class="diff-btn"        data-diff="hard" type="button">Hard Wind</button>
+          </div>
+          <button id="tutorial-btn" type="button">Tutorial</button>
+        </div>
       </header>
 
       <main>
-        <svg id="grid"
-             viewBox="0 0 500 500"
-             role="grid"
-             aria-label="Game board"
-             xmlns="http://www.w3.org/2000/svg">
-        </svg>
+        <div class="grid-wrap">
+          <svg id="grid"
+               viewBox="0 0 500 500"
+               role="grid"
+               aria-label="Game board"
+               xmlns="http://www.w3.org/2000/svg">
+          </svg>
+          <!-- Tutorial overlay: dims the grid; highlight ring added via JS on a cell -->
+          <div id="tut-overlay" aria-hidden="true" hidden></div>
+        </div>
+
+        <!-- Tutorial instruction panel (replaces status during tutorial) -->
+        <div id="tut-panel" hidden>
+          <p id="tut-msg"></p>
+          <div id="tut-actions"></div>
+        </div>
 
         <div id="compass-wrap">
           <svg id="compass"
@@ -33,10 +50,14 @@
         </div>
 
         <div id="status" aria-live="polite">Tap a square to plant</div>
+
+        <!-- Confetti container for win celebration -->
+        <div id="confetti" aria-hidden="true"></div>
       </main>
 
       <footer>
         <button id="reset-btn" type="button">New Game</button>
+        <p id="game-attribution"><em>Based on <a href="https://www.hachettebookgroup.com/titles/ben-orlin/math-games-with-bad-drawings/9780762499861/" target="_blank" rel="noopener">Math Games with Bad Drawings</a> by Ben Orlin</em></p>
       </footer>
     </div>
 
