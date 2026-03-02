@@ -15,11 +15,14 @@ You play the Dandelions against the Wind (computer). Each round you plant one fl
 - Single player vs computer Wind (Easy or Hard difficulty)
 - Interactive 3-round tutorial
 - Responsive SVG interface — works on phone, tablet, or desktop
-- No accounts, no ads, no tracking, no internet required after first load
+- No accounts, no ads, no tracking
+- Installable as an offline app — no internet needed after first visit
 
 ## Play
 
-Open `index.html` in a browser. On mobile, open the hosted link and tap "Add to Home Screen" for offline play.
+**On your phone:** Visit [mycarta.github.io/Dandelions](https://mycarta.github.io/Dandelions/) and tap "Add to Home Screen" — it works offline after that.
+
+**On desktop:** Open the same link in any browser.
 
 ## Attribution
 
