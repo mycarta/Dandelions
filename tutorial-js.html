@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS for Python Programmers — Dandelions Engine</title>
+<style>
+  :root {
+    --bg:       #0f230f;
+    --surface:  #162c16;
+    --border:   #2a4a2a;
+    --text:     #d8e8d8;
+    --muted:    #7a9b7a;
+    --gold:     #d4a017;
+    --gold-dim: #9a7010;
+    --code-bg:  #0b1a0b;
+    --try-bg:   #101f10;
+    --err:      #e06060;
+    --link:     #6dbf6d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 1rem;
+    line-height: 1.7;
+    padding: 1.5rem 1rem 4rem;
+  }
+
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* ── Typography ── */
+  h1 {
+    font-size: clamp(1.5rem, 5vw, 2.2rem);
+    color: var(--gold);
+    margin-bottom: 0.3rem;
+    letter-spacing: 0.02em;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 1rem;
+    margin-bottom: 2.5rem;
+  }
+
+  h2 {
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    color: var(--gold);
+    margin: 2.8rem 0 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h3 {
+    font-size: 1.05rem;
+    color: var(--gold);
+    margin: 1.8rem 0 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.82rem;
+  }
+
+  p { margin-bottom: 0.9rem; }
+
+  ul, ol {
+    padding-left: 1.4rem;
+    margin-bottom: 0.9rem;
+  }
+
+  li { margin-bottom: 0.3rem; }
+
+  a { color: var(--link); }
+
+  /* ── Inline code ── */
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.88em;
+    background: var(--code-bg);
+    color: var(--gold);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+  }
+
+  /* ── Code blocks ── */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.84rem;
+    line-height: 1.55;
+    margin-bottom: 1.2rem;
+    color: #c8e0c8;
+  }
+
+  pre .kw  { color: #88c0d0; }   /* keyword: const, let, function, return… */
+  pre .fn  { color: #8fbcbb; }   /* function names */
+  pre .str { color: #a3be8c; }   /* strings */
+  pre .num { color: #b48ead; }   /* numbers */
+  pre .cmt { color: #4a6a4a; font-style: italic; }  /* comments */
+  pre .op  { color: var(--gold-dim); }               /* operators */
+
+  /* ── Comparison table ── */
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.7rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .compare-col {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.8rem 1rem;
+  }
+
+  .compare-col .lang {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .compare-col pre {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.83rem;
+  }
+
+  /* ── Concept pills ── */
+  .concepts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.6rem 0 1.1rem;
+  }
+
+  .concept {
+    background: #1c3a1c;
+    border: 1px solid var(--gold-dim);
+    border-radius: 12px;
+    padding: 0.2em 0.7em;
+    font-size: 0.78rem;
+    color: var(--gold);
+  }
+
+  /* ── Callout / info box ── */
+  .note {
+    background: var(--surface);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 6px 6px 0;
+    padding: 0.7rem 1rem;
+    margin-bottom: 1.1rem;
+    font-size: 0.93rem;
+  }
+
+  .note strong { color: var(--gold); }
+
+  /* ── Function card ── */
+  .fn-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.4rem 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .fn-card h2 {
+    margin-top: 0;
+    border: none;
+    padding: 0;
+    margin-bottom: 0.6rem;
+    font-size: 1.25rem;
+  }
+
+  .fn-number {
+    display: inline-block;
+    background: var(--gold);
+    color: #0f230f;
+    font-weight: 700;
+    width: 1.6rem;
+    height: 1.6rem;
+    line-height: 1.6rem;
+    text-align: center;
+    border-radius: 50%;
+    font-size: 0.85rem;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+  }
+
+  /* ── Try it ── */
+  .try-it {
+    background: var(--try-bg);
+    border: 1px solid var(--gold-dim);
+    border-radius: 8px;
+    padding: 1rem 1.1rem;
+    margin-top: 1.2rem;
+  }
+
+  .try-it .try-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+  }
+
+  .try-it textarea {
+    display: block;
+    width: 100%;
+    background: var(--code-bg);
+    color: #c8e0c8;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.7rem 0.9rem;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.83rem;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 120px;
+    margin-bottom: 0.6rem;
+  }
+
+  .try-it textarea:focus {
+    outline: 2px solid var(--gold-dim);
+  }
+
+  .run-btn {
+    background: var(--gold);
+    color: #0f230f;
+    border: none;
+    border-radius: 5px;
+    padding: 0.4em 1.1em;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+  }
+
+  .run-btn:hover { background: #e8b828; }
+
+  .try-output {
+    margin-top: 0.7rem;
+    background: #060f06;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.6rem 0.9rem;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    white-space: pre-wrap;
+    min-height: 2rem;
+    color: #9bcc9b;
+    display: none;
+  }
+
+  .try-output.error { color: var(--err); }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.4rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .toc h3 {
+    margin-top: 0;
+    margin-bottom: 0.6rem;
+    text-transform: none;
+    font-size: 0.9rem;
+    letter-spacing: 0;
+    color: var(--muted);
+  }
+
+  .toc ol {
+    margin: 0;
+  }
+
+  .toc li { margin-bottom: 0.2rem; }
+
+  .toc a {
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.92rem;
+  }
+
+  .toc a:hover { color: var(--gold); }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .compare { grid-template-columns: 1fr; }
+    .fn-card { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>JavaScript for Python Programmers</h1>
+<p class="subtitle">A guided tour through the Dandelions game engine — real code, practical comparisons, no fluff.</p>
+
+<!-- TOC -->
+<div class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#foundations">Foundations: how JS differs from Python</a></li>
+    <li><a href="#fn-createBoard">createBoard</a></li>
+    <li><a href="#fn-copyBoard">copyBoard</a></li>
+    <li><a href="#fn-placeFlower">placeFlower</a></li>
+    <li><a href="#fn-blowWind">blowWind</a></li>
+    <li><a href="#fn-checkWin">checkWin</a></li>
+    <li><a href="#fn-getValidPlacements">getValidPlacements</a></li>
+    <li><a href="#fn-getUnusedDirections">getUnusedDirections</a></li>
+    <li><a href="#fn-printBoard">printBoard</a></li>
+  </ol>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ FOUNDATIONS -->
+<h2 id="foundations">Foundations</h2>
+
+<h3>How JS runs in the browser</h3>
+<p>
+  Python needs an interpreter — you run <code>python script.py</code> and the interpreter
+  executes it. JavaScript is built into every browser. You write code inside an HTML file
+  (or link to a <code>.js</code> file), open the file, and it runs. No install, no terminal.
+  Open DevTools with <strong>F12</strong> → <strong>Console</strong> to see output and
+  try one-liners interactively — it's like Python's REPL.
+</p>
+<p>
+  In the Dandelions project, <code>index.html</code> has <code>&lt;script src="game.js"&gt;</code>.
+  The browser loads game.js, runs it top-to-bottom, and everything defined at the top level
+  is live in the page's global scope.
+</p>
+
+<h3>const, let, and var</h3>
+<p>
+  JS has three ways to declare a variable. You should use two of them:
+</p>
+<ul>
+  <li><code>const</code> — the binding can't be reassigned. Use this by default.</li>
+  <li><code>let</code> — the binding can be reassigned. Use when you need to update the variable.</li>
+  <li><code>var</code> — old, function-scoped, hoisted in ways that cause subtle bugs. Never use it in new code.</li>
+</ul>
+<p>
+  Neither <code>const</code> nor <code>let</code> has a direct Python equivalent — Python just has assignment
+  and no enforcement. Think of <code>const</code> as a hint to yourself and to anyone reading the code
+  that this value won't change.
+</p>
+
+<div class="compare">
+  <div class="compare-col">
+    <div class="lang">JavaScript</div>
+    <pre>const SIZE = 5;
+let round = 0;
+round = 1;      // ✓ let can reassign
+SIZE = 6;       // ✗ TypeError: const</pre>
+  </div>
+  <div class="compare-col">
+    <div class="lang">Python</div>
+    <pre>SIZE = 5        # convention only
+round = 0
+round = 1       # fine
+SIZE = 6        # also fine, no enforcement</pre>
+  </div>
+</div>
+
+<h3>2D arrays: JS vs numpy</h3>
+<p>
+  Python game code might use numpy for grids, but JS has no numpy. JS arrays are regular
+  lists — and a "2D array" is just an array of arrays.
+</p>
+
+<div class="compare">
+  <div class="compare-col">
+    <div class="lang">JavaScript</div>
+    <pre>const board = [
+  [0, 0, 0],
+  [0, 1, 0],
+  [0, 0, 0]
+];
+board[1][1];  // → 1
+board[1][2] = 2;</pre>
+  </div>
+  <div class="compare-col">
+    <div class="lang">Python (plain list)</div>
+    <pre>board = [
+  [0, 0, 0],
+  [0, 1, 0],
+  [0, 0, 0]
+]
+board[1][1]   # → 1
+board[1][2] = 2</pre>
+  </div>
+</div>
+
+<p>
+  The indexing is identical. The big difference shows up in creation and copying —
+  you can't use numpy's <code>np.zeros((5,5))</code> or <code>board.copy()</code>.
+  You'll see how the engine handles this in <code>createBoard</code> and <code>copyBoard</code>.
+</p>
+
+<h3>Truthiness and falsiness</h3>
+<p>
+  Both languages have truthy/falsy values, but the falsy sets differ. In JS, falsy values
+  are: <code>false</code>, <code>0</code>, <code>""</code>, <code>null</code>,
+  <code>undefined</code>, and <code>NaN</code>. Notice <code>0</code> is falsy — which
+  matters a lot in board logic since empty cells are <code>0</code>.
+</p>
+<div class="note">
+  <strong>Important:</strong> Use <code>===</code> (strict equality) in JS, not <code>==</code>.
+  The loose <code>==</code> does type coercion: <code>0 == false</code> is <code>true</code>,
+  which causes bugs. <code>0 === false</code> is <code>false</code>. Stick to <code>===</code>
+  everywhere — it behaves like Python's <code>==</code>.
+</div>
+
+<h3>The DIRECTIONS object — JS dict</h3>
+<p>
+  The engine's constant <code>DIRECTIONS</code> is a plain JS object used as a dictionary.
+  Its keys are strings and its values are <code>[dr, dc]</code> arrays.
+</p>
+
+<div class="compare">
+  <div class="compare-col">
+    <div class="lang">JavaScript</div>
+    <pre>const DIRECTIONS = {
+  N:  [-1,  0],
+  NE: [-1,  1],
+  E:  [ 0,  1],
+  // …
+};
+DIRECTIONS['N'];   // [-1, 0]
+DIRECTIONS.N;      // same thing
+Object.keys(DIRECTIONS); // ['N','NE','E',…]</pre>
+  </div>
+  <div class="compare-col">
+    <div class="lang">Python</div>
+    <pre>DIRECTIONS = {
+  'N':  (-1,  0),
+  'NE': (-1,  1),
+  'E':  ( 0,  1),
+  # …
+}
+DIRECTIONS['N']    # (-1, 0)
+# no dot access for dicts
+list(DIRECTIONS.keys())  # ['N','NE','E',…]</pre>
+  </div>
+</div>
+
+<p>
+  JS objects can be accessed with dot notation (<code>obj.key</code>) or bracket notation
+  (<code>obj['key']</code>). Use bracket notation when the key is in a variable:
+  <code>DIRECTIONS[dir]</code> where <code>dir = 'NE'</code>.
+</p>
+
+<div class="try-it">
+  <div class="try-label">Try it — DIRECTIONS object</div>
+  <textarea class="try-code">const DIRECTIONS = {
+  N:  [-1,  0],  NE: [-1,  1],
+  E:  [ 0,  1],  SE: [ 1,  1],
+  S:  [ 1,  0],  SW: [ 1, -1],
+  W:  [ 0, -1],  NW: [-1, -1]
+};
+
+// Print all direction vectors
+for (const [name, vec] of Object.entries(DIRECTIONS)) {
+  console.log(name + ': [' + vec + ']');
+}
+
+// Try: look up a direction by variable
+const dir = 'SW';
+console.log('SW vector:', DIRECTIONS[dir]);</textarea>
+  <button class="run-btn" onclick="runCode(this)">Run</button>
+  <pre class="try-output"></pre>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ 1. createBoard -->
+<div class="fn-card" id="fn-createBoard">
+<h2><span class="fn-number">1</span> createBoard</h2>
+
+<div class="concepts">
+  <span class="concept">Array.from()</span>
+  <span class="concept">arrow functions</span>
+  <span class="concept">Array.fill()</span>
+</div>
+
+<pre>function createBoard() {
+  return Array.from({ length: 5 }, () => Array(5).fill(0));
+}</pre>
+
+<h3>What it does</h3>
+<p>
+  Creates and returns a fresh 5×5 board — a 2D array where every cell is <code>0</code> (empty).
+  No parameters, nothing to configure, just a clean slate.
+</p>
+
+<h3>The JS concepts</h3>
+<p>
+  <code>Array.from({ length: 5 }, callback)</code> is the JS idiom for "make an array by calling
+  a function N times." The first argument is any object with a <code>length</code> property;
+  the second argument is a mapping function called once per index.
+</p>
+<p>
+  <code>() => Array(5).fill(0)</code> is an <strong>arrow function</strong>. It takes no
+  arguments (the <code>()</code>) and returns a 5-element array filled with zeros.
+  In Python you'd write <code>lambda: [0]*5</code>, though the more idiomatic Python
+  would be a list comprehension: <code>[0]*5</code>.
+</p>
+
+<div class="note">
+  <strong>Why not just <code>Array(5).fill(Array(5).fill(0))</code>?</strong><br>
+  Because <code>fill</code> with an object argument fills every slot with the <em>same</em>
+  reference. Modifying one row would modify all rows. The arrow function creates a fresh
+  inner array each time — the equivalent of the Python gotcha with
+  <code>[[0]*5]*5</code> vs <code>[[0]*5 for _ in range(5)]</code>.
+</div>
+
+<div class="compare">
+  <div class="compare-col">
+    <div class="lang">JavaScript</div>
+    <pre>Array.from({ length: 5 },
+  () => Array(5).fill(0)
+);</pre>
+  </div>
+  <div class="compare-col">
+    <div class="lang">Python</div>
+    <pre>[[0] * 5 for _ in range(5)]
+
+# NOT [[0]*5]*5 — same bug applies</pre>
+  </div>
+</div>
+
+<div class="try-it">
+  <div class="try-label">Try it — createBoard</div>
+  <textarea class="try-code">function createBoard() {
+  return Array.from({ length: 5 }, () => Array(5).fill(0));
+}
+
+const board = createBoard();
+console.log('Board size:', board.length, 'x', board[0].length);
+console.log('Cell at [0][0]:', board[0][0]);
+
+// Prove rows are independent objects
+board[0][0] = 99;
+console.log('After setting [0][0]=99:');
+console.log('  board[0]:', JSON.stringify(board[0]));
+console.log('  board[1]:', JSON.stringify(board[1]));</textarea>
+  <button class="run-btn" onclick="runCode(this)">Run</button>
+  <pre class="try-output"></pre>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ 2. copyBoard -->
+<div class="fn-card" id="fn-copyBoard">
+<h2><span class="fn-number">2</span> copyBoard</h2>
+
+<div class="concepts">
+  <span class="concept">Array.map()</span>
+  <span class="concept">spread operator</span>
+  <span class="concept">shallow vs deep copy</span>
+</div>
+
+<pre>function copyBoard(board) {
+  return board.map(row => [...row]);
+}</pre>
+
+<h3>What it does</h3>
+<p>
+  Returns a deep copy of the board. Changes to the copy won't affect the original,
+  which is critical because <code>blowWind</code> and <code>placeFlower</code>
+  both need to return a new board without mutating the input.
+</p>
+
+<h3>The JS concepts</h3>
+<p>
+  <code>array.map(fn)</code> applies a function to every element and returns a new array.
+  In Python this is either <code>[fn(x) for x in array]</code> or <code>map(fn, array)</code>
+  (though Python's <code>map</code> returns an iterator, not a list). JS's <code>.map()</code>
+  always returns a new array immediately.
+</p>
+<p>
+  <code>[...row]</code> is the <strong>spread operator</strong> inside an array literal.
+  It expands an iterable into individual elements, creating a shallow copy of the row.
+  Since rows contain numbers (primitives), a shallow copy is a true copy here.
+  In Python the equivalent is <code>row[:]</code> or <code>list(row)</code>.
+</p>
+
+<div class="compare">
+  <div class="compare-col">
+    <div class="lang">JavaScript</div>
+    <pre>board.map(row => [...row])
+
+// spread also works for merging:
+const a = [1, 2];
+const b = [3, 4];
+[...a, ...b]; // [1,2,3,4]</pre>
+  </div>
+  <div class="compare-col">
+    <div class="lang">Python</div>
+    <pre>[row[:] for row in board]
+
+# unpacking equivalent:
+a = [1, 2]
+b = [3, 4]
+[*a, *b]   # [1,2,3,4]</pre>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Why not <code>JSON.parse(JSON.stringify(board))</code>?</strong> That's a common
+  deep-copy hack in JS that works but is slow and breaks for non-JSON-safe values.
+  For a 2D array of numbers, <code>map + spread</code> is clean and fast.
+</div>
+
+<div class="try-it">
+  <div class="try-label">Try it — copyBoard</div>
+  <textarea class="try-code">function copyBoard(board) {
+  return board.map(row => [...row]);
+}
+
+const original = [[0,1,0],[2,0,1],[0,0,0]];
+const copy = copyBoard(original);
+
+// Mutate the copy
+copy[0][0] = 99;
+
+console.log('original[0][0]:', original[0][0]); // should be 0
+console.log('copy[0][0]:', copy[0][0]);           // should be 99
+
+// Also try: what does map give you without spread?
+const badCopy = original.map(row => row); // same row references
+badCopy[1][0] = 77;
+console.log('original[1][0] after bad copy mutation:', original[1][0]); // oops!</textarea>
+  <button class="run-btn" onclick="runCode(this)">Run</button>
+  <pre class="try-output"></pre>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ 3. placeFlower -->
+<div class="fn-card" id="fn-placeFlower">
+<h2><span class="fn-number">3</span> placeFlower</h2>
+
+<div class="concepts">
+  <span class="concept">=== strict equality</span>
+  <span class="concept">returning null</span>
+  <span class="concept">immutable pattern</span>
+</div>
+
+<pre>function placeFlower(board, row, col) {
+  if (board[row][col] === 1) return null;
+  const newBoard = copyBoard(board);
+  newBoard[row][col] = 1;
+  return newBoard;
+}</pre>
+
+<h3>What it does</h3>
+<p>
+  Attempts to place a flower at <code>(row, col)</code>. Flowers can go on empty cells
+  (<code>0</code>) or seed cells (<code>2</code>), but not on an existing flower (<code>1</code>).
+  Returns the new board on success, <code>null</code> on failure.
+</p>
+
+<h3>The JS concepts</h3>
+<p>
+  <code>===</code> is strict equality — it checks value <em>and</em> type with no coercion.
+  Always use this instead of <code>==</code>. Here <code>board[row][col] === 1</code> is
+  exactly like Python's <code>board[row][col] == 1</code>.
+</p>
+<p>
+  <code>null</code> in JS is a deliberate "no value" signal, similar to Python's <code>None</code>.
+  Returning <code>null</code> on an invalid move is a common pattern — the caller checks
+  <code>if (result !== null)</code> or just <code>if (result)</code>.
+</p>
+<p>
+  Notice the function never mutates the input board. It calls <code>copyBoard</code> first,
+  then modifies the copy. This is the immutable data pattern — functions that return new
+  state instead of changing existing state. It makes the game easy to reason about since
+  you can always keep a "before" snapshot.
+</p>
+
+<div class="compare">
+  <div class="compare-col">
+    <div class="lang">JavaScript</div>
+    <pre>if (board[row][col] === 1) return null;
+// caller:
+const result = placeFlower(board, 2, 2);
+if (result) { /* success */ }</pre>
+  </div>
+  <div class="compare-col">
+    <div class="lang">Python</div>
+    <pre>if board[row][col] == 1: return None
+# caller:
+result = place_flower(board, 2, 2)
+if result is not None: ...</pre>
+  </div>
+</div>
+
+<div class="try-it">
+  <div class="try-label">Try it — placeFlower</div>
+  <textarea class="try-code">function copyBoard(b) { return b.map(r => [...r]); }
+
+function placeFlower(board, row, col) {
+  if (board[row][col] === 1) return null;
+  const newBoard = copyBoard(board);
+  newBoard[row][col] = 1;
+  return newBoard;
+}
+
+const board = [[0,0,0],[0,1,0],[0,0,2]];
+
+const b2 = placeFlower(board, 0, 0); // valid — empty cell
+console.log('Place on empty:', b2 !== null ? 'success' : 'rejected');
+
+const b3 = placeFlower(board, 1, 1); // invalid — already a flower
+console.log('Place on flower:', b3 !== null ? 'success' : 'rejected');
+
+const b4 = placeFlower(board, 2, 2); // valid — seed cell
+console.log('Place on seed:', b4 !== null ? 'success' : 'rejected');</textarea>
+  <button class="run-btn" onclick="runCode(this)">Run</button>
+  <pre class="try-output"></pre>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ 4. blowWind -->
+<div class="fn-card" id="fn-blowWind">
+<h2><span class="fn-number">4</span> blowWind</h2>
+
+<div class="concepts">
+  <span class="concept">destructuring assignment</span>
+  <span class="concept">while loop</span>
+  <span class="concept">nested for loops</span>
+  <span class="concept">let for mutation</span>
+</div>
+
+<pre>function blowWind(board, direction) {
+  const [dr, dc] = DIRECTIONS[direction];
+  const newBoard = copyBoard(board);
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      if (board[r][c] === 1) {
+        let nr = r + dr;
+        let nc = c + dc;
+        while (nr >= 0 && nr < 5 && nc >= 0 && nc < 5) {
+          if (newBoard[nr][nc] === 0) {
+            newBoard[nr][nc] = 2;
+          }
+          nr += dr;
+          nc += dc;
+        }
+      }
+    }
+  }
+  return newBoard;
+}</pre>
+
+<h3>What it does</h3>
+<p>
+  Simulates wind blowing in one compass direction. For every flower on the board, it
+  traces outward step-by-step in that direction and fills any empty cells (<code>0</code>)
+  with seeds (<code>2</code>). It passes through flowers and seeds without stopping — a
+  key rule of the game.
+</p>
+
+<h3>The JS concepts</h3>
+<p>
+  <code>const [dr, dc] = DIRECTIONS[direction]</code> is <strong>destructuring assignment</strong>.
+  It unpacks an array into named variables in one line — identical to Python's tuple unpacking
+  <code>dr, dc = DIRECTIONS[direction]</code>.
+</p>
+<p>
+  The outer loops use <code>let r</code> and <code>let c</code> because those variables
+  are reassigned on each iteration. The inner <code>let nr, nc</code> are also <code>let</code>
+  because the <code>while</code> loop updates them. This is the rule of thumb: use
+  <code>let</code> when you'll do <code>x += something</code> or <code>x = newValue</code>.
+</p>
+<p>
+  The <code>while</code> loop bounds check <code>nr >= 0 && nr &lt; 5 && nc >= 0 && nc &lt; 5</code>
+  is the JS equivalent of Python's <code>0 <= nr < 5 and 0 <= nc < 5</code>. JS doesn't
+  support chained comparisons, so you write each bound explicitly with <code>&&</code>.
+</p>
+
+<div class="compare">
+  <div class="compare-col">
+    <div class="lang">JavaScript</div>
+    <pre>const [dr, dc] = DIRECTIONS[dir];
+// loop:
+for (let r = 0; r < 5; r++) {
+  for (let c = 0; c < 5; c++) { ... }
+}
+// bounds check:
+nr >= 0 && nr < 5 && nc >= 0 && nc < 5</pre>
+  </div>
+  <div class="compare-col">
+    <div class="lang">Python</div>
+    <pre>dr, dc = DIRECTIONS[dir]
+# loop:
+for r in range(5):
+  for c in range(5):
+    ...
+# bounds check:
+0 <= nr < 5 and 0 <= nc < 5</pre>
+  </div>
+</div>
+
+<div class="try-it">
+  <div class="try-label">Try it — blowWind</div>
+  <textarea class="try-code">const DIRECTIONS = {
+  N:[-1,0], NE:[-1,1], E:[0,1], SE:[1,1],
+  S:[1,0],  SW:[1,-1], W:[0,-1], NW:[-1,-1]
+};
+function copyBoard(b) { return b.map(r => [...r]); }
+
+function blowWind(board, direction) {
+  const [dr, dc] = DIRECTIONS[direction];
+  const newBoard = copyBoard(board);
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      if (board[r][c] === 1) {
+        let nr = r + dr; let nc = c + dc;
+        while (nr>=0 && nr<5 && nc>=0 && nc<5) {
+          if (newBoard[nr][nc] === 0) newBoard[nr][nc] = 2;
+          nr += dr; nc += dc;
+        }
+      }
+    }
+  }
+  return newBoard;
+}
+
+// Place a flower in the center and blow East
+const board = [[0,0,0,0,0],[0,0,0,0,0],[0,0,1,0,0],[0,0,0,0,0],[0,0,0,0,0]];
+const after = blowWind(board, 'E');
+const sym = {0:'.',1:'*',2:'·'};
+console.log('After blowing East (flower at center):');
+after.forEach(row => console.log(row.map(c => sym[c]).join(' ')));
+
+// Try changing 'E' to 'S', 'NE', etc. and see what changes</textarea>
+  <button class="run-btn" onclick="runCode(this)">Run</button>
+  <pre class="try-output"></pre>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ 5. checkWin -->
+<div class="fn-card" id="fn-checkWin">
+<h2><span class="fn-number">5</span> checkWin</h2>
+
+<div class="concepts">
+  <span class="concept">Array.every()</span>
+  <span class="concept">chained array methods</span>
+  <span class="concept">!== operator</span>
+</div>
+
+<pre>function checkWin(board) {
+  return board.every(row => row.every(cell => cell !== 0));
+}</pre>
+
+<h3>What it does</h3>
+<p>
+  Returns <code>true</code> if no cell on the board is empty (no zeros remain).
+  All cells must be either a flower (<code>1</code>) or a seed (<code>2</code>).
+  One zero anywhere means the player loses.
+</p>
+
+<h3>The JS concepts</h3>
+<p>
+  <code>array.every(fn)</code> returns <code>true</code> only if the function returns
+  <code>true</code> for every element. It short-circuits — as soon as one element fails,
+  it stops checking. The Python equivalent is the built-in <code>all()</code>.
+</p>
+<p>
+  <code>board.every(row => row.every(cell => cell !== 0))</code> chains two calls:
+  the outer iterates rows, the inner iterates cells. The whole expression reads:
+  "every row is such that every cell is not zero."
+</p>
+
+<div class="compare">
+  <div class="compare-col">
+    <div class="lang">JavaScript</div>
+    <pre>board.every(row =>
+  row.every(cell => cell !== 0)
+)
+// also useful:
+board.some(row =>
+  row.some(cell => cell === 0)
+) // true if ANY zero exists</pre>
+  </div>
+  <div class="compare-col">
+    <div class="lang">Python</div>
+    <pre>all(cell != 0
+    for row in board
+    for cell in row)
+
+# any zero:
+any(cell == 0
+    for row in board
+    for cell in row)</pre>
+  </div>
+</div>
+
+<div class="note">
+  <strong>every vs some:</strong> JS's <code>.every()</code> is Python's <code>all()</code>,
+  and JS's <code>.some()</code> is Python's <code>any()</code>. Both short-circuit.
+</div>
+
+<div class="try-it">
+  <div class="try-label">Try it — checkWin</div>
+  <textarea class="try-code">function checkWin(board) {
+  return board.every(row => row.every(cell => cell !== 0));
+}
+
+const full  = [[1,2,2],[2,1,2],[2,2,1]];
+const empty = [[1,2,0],[2,1,2],[2,2,1]];
+
+console.log('Full board wins:', checkWin(full));   // true
+console.log('Empty cell loses:', checkWin(empty)); // false
+
+// Bonus: find the winning condition count using filter + flat
+const mixed = [[1,2,0],[0,1,2],[2,0,1]];
+const zeros = mixed.flat().filter(c => c === 0).length;
+console.log('Zeros remaining:', zeros);
+// .flat() collapses 2D array to 1D — like itertools.chain.from_iterable</textarea>
+  <button class="run-btn" onclick="runCode(this)">Run</button>
+  <pre class="try-output"></pre>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ 6. getValidPlacements -->
+<div class="fn-card" id="fn-getValidPlacements">
+<h2><span class="fn-number">6</span> getValidPlacements</h2>
+
+<div class="concepts">
+  <span class="concept">Array.push()</span>
+  <span class="concept">object literals</span>
+  <span class="concept">|| OR operator</span>
+</div>
+
+<pre>function getValidPlacements(board) {
+  const placements = [];
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      if (board[r][c] === 0 || board[r][c] === 2) {
+        placements.push({ row: r, col: c });
+      }
+    }
+  }
+  return placements;
+}</pre>
+
+<h3>What it does</h3>
+<p>
+  Returns a list of all cells where a flower can be placed — cells that are either empty
+  (<code>0</code>) or seeded (<code>2</code>). Flowers (<code>1</code>) are the only
+  excluded cells.
+</p>
+
+<h3>The JS concepts</h3>
+<p>
+  <code>array.push(value)</code> appends to an array in place, like Python's
+  <code>list.append(value)</code>. It returns the new length of the array, though
+  that return value is rarely used.
+</p>
+<p>
+  <code>{ row: r, col: c }</code> is an <strong>object literal</strong> — an inline
+  dictionary. This is idiomatic JS for returning structured data from a function. The
+  Python equivalent would be a <code>dict</code>: <code>{'row': r, 'col': c}</code>,
+  or a <code>namedtuple</code>, or a <code>dataclass</code> instance.
+</p>
+
+<div class="compare">
+  <div class="compare-col">
+    <div class="lang">JavaScript</div>
+    <pre>placements.push({ row: r, col: c });
+// access later:
+placements[0].row
+placements[0].col</pre>
+  </div>
+  <div class="compare-col">
+    <div class="lang">Python</div>
+    <pre>placements.append({'row': r, 'col': c})
+# access later:
+placements[0]['row']
+placements[0]['col']</pre>
+  </div>
+</div>
+
+<p>
+  A more JS-idiomatic alternative (not used here, but common) would be to build this
+  with a <code>flatMap</code>: iterate rows and columns and return position objects for
+  valid cells. But the imperative loop is easier to read and just as fast for a 5×5 board.
+</p>
+
+<div class="try-it">
+  <div class="try-label">Try it — getValidPlacements</div>
+  <textarea class="try-code">function getValidPlacements(board) {
+  const placements = [];
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      if (board[r][c] === 0 || board[r][c] === 2) {
+        placements.push({ row: r, col: c });
+      }
+    }
+  }
+  return placements;
+}
+
+const board = [
+  [1,0,2,0,1],
+  [0,1,0,2,0],
+  [2,0,0,0,2],
+  [0,2,1,0,0],
+  [1,0,0,2,1]
+];
+
+const valid = getValidPlacements(board);
+console.log('Valid placement count:', valid.length);
+console.log('First few:', JSON.stringify(valid.slice(0,3)));
+
+// How many are seeds vs empty?
+const seeds = valid.filter(p => board[p.row][p.col] === 2).length;
+const empty = valid.filter(p => board[p.row][p.col] === 0).length;
+console.log('Seeds that can be overplanted:', seeds);
+console.log('Empty cells:', empty);</textarea>
+  <button class="run-btn" onclick="runCode(this)">Run</button>
+  <pre class="try-output"></pre>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ 7. getUnusedDirections -->
+<div class="fn-card" id="fn-getUnusedDirections">
+<h2><span class="fn-number">7</span> getUnusedDirections</h2>
+
+<div class="concepts">
+  <span class="concept">Object.keys()</span>
+  <span class="concept">Array.filter()</span>
+  <span class="concept">Array.includes()</span>
+  <span class="concept">! negation</span>
+</div>
+
+<pre>function getUnusedDirections(usedDirections) {
+  return Object.keys(DIRECTIONS).filter(d => !usedDirections.includes(d));
+}</pre>
+
+<h3>What it does</h3>
+<p>
+  Given a list of already-used direction strings, returns the ones not yet used.
+  The game uses 7 of the 8 compass directions across 7 rounds, so this tells
+  the wind which choices remain.
+</p>
+
+<h3>The JS concepts</h3>
+<p>
+  <code>Object.keys(obj)</code> returns an array of an object's own string keys — exactly
+  like <code>list(dict.keys())</code> in Python. It preserves insertion order (in practice),
+  so for <code>DIRECTIONS</code> you get <code>['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']</code>.
+</p>
+<p>
+  <code>array.filter(fn)</code> returns a new array containing only elements for which
+  the function returns <code>true</code>. The closest Python equivalent is a list
+  comprehension with an <code>if</code> clause: <code>[x for x in arr if condition(x)]</code>.
+  JS also has <code>Array.from(arr).filter(...)</code> but plain <code>.filter()</code> is cleaner.
+</p>
+<p>
+  <code>array.includes(value)</code> is like Python's <code>value in list</code>.
+  <code>!usedDirections.includes(d)</code> reads "d is not in usedDirections."
+</p>
+
+<div class="compare">
+  <div class="compare-col">
+    <div class="lang">JavaScript</div>
+    <pre>Object.keys(DIRECTIONS)
+  .filter(d => !usedDirections.includes(d))
+
+// includes = Python's "in":
+[1,2,3].includes(2)  // true</pre>
+  </div>
+  <div class="compare-col">
+    <div class="lang">Python</div>
+    <pre>[d for d in DIRECTIONS.keys()
+ if d not in used_directions]
+
+# 'in' test:
+2 in [1,2,3]         # True</pre>
+  </div>
+</div>
+
+<div class="try-it">
+  <div class="try-label">Try it — getUnusedDirections</div>
+  <textarea class="try-code">const DIRECTIONS = {
+  N:[-1,0], NE:[-1,1], E:[0,1], SE:[1,1],
+  S:[1,0],  SW:[1,-1], W:[0,-1], NW:[-1,-1]
+};
+
+function getUnusedDirections(usedDirections) {
+  return Object.keys(DIRECTIONS).filter(d => !usedDirections.includes(d));
+}
+
+const used = ['N', 'E', 'S', 'W'];
+const unused = getUnusedDirections(used);
+console.log('Used:', used.join(', '));
+console.log('Unused:', unused.join(', '));
+console.log('Remaining count:', unused.length);
+
+// After 7 rounds, only one direction is permanently unused:
+const almostDone = ['N','NE','E','SE','S','SW','W'];
+console.log('After 7 rounds unused:', getUnusedDirections(almostDone));</textarea>
+  <button class="run-btn" onclick="runCode(this)">Run</button>
+  <pre class="try-output"></pre>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ 8. printBoard -->
+<div class="fn-card" id="fn-printBoard">
+<h2><span class="fn-number">8</span> printBoard</h2>
+
+<div class="concepts">
+  <span class="concept">object as lookup table</span>
+  <span class="concept">for...of loop</span>
+  <span class="concept">Array.map() + join()</span>
+  <span class="concept">template literals</span>
+  <span class="concept">console.log</span>
+</div>
+
+<pre>function printBoard(board) {
+  const symbols = { 0: '.', 1: '*', 2: '\u00b7' };
+  for (const row of board) {
+    console.log(row.map(cell => symbols[cell]).join(' '));
+  }
+}</pre>
+
+<h3>What it does</h3>
+<p>
+  Prints the board to the browser console in a human-readable grid.
+  <code>.</code> = empty, <code>*</code> = flower, <code>·</code> = seed.
+  Useful for debugging — open DevTools (F12) and you can inspect the board state at any point.
+</p>
+
+<h3>The JS concepts</h3>
+<p>
+  <code>{ 0: '.', 1: '*', 2: '·' }</code> is a plain object used as a lookup table,
+  mapping integers to display characters. Python would use a dict:
+  <code>{0: '.', 1: '*', 2: '·'}</code>. Functionally identical — both support integer keys.
+</p>
+<p>
+  <code>for (const row of board)</code> is the <code>for...of</code> loop — iterates over
+  the values of an iterable, just like Python's <code>for row in board</code>. Use this
+  when you don't need the index.
+</p>
+<p>
+  <code>row.map(cell => symbols[cell]).join(' ')</code> chains two array methods.
+  <code>.map()</code> transforms each cell value to its symbol character.
+  <code>.join(sep)</code> concatenates the resulting array into a string with a separator —
+  exactly like Python's <code>' '.join(list)</code>.
+</p>
+<p>
+  <code>console.log</code> is JS's <code>print</code>. It accepts any number of arguments
+  separated by commas and prints them space-separated. You can also use template literals
+  for formatted output: <code>console.log(`Round ${round} of 7`)</code>.
+</p>
+
+<div class="compare">
+  <div class="compare-col">
+    <div class="lang">JavaScript</div>
+    <pre>for (const row of board) {
+  console.log(
+    row.map(c => symbols[c]).join(' ')
+  );
+}
+// template literal:
+console.log(`Round ${round} of 7`);</pre>
+  </div>
+  <div class="compare-col">
+    <div class="lang">Python</div>
+    <pre>for row in board:
+    print(
+        ' '.join(symbols[c] for c in row)
+    )
+# f-string:
+print(f'Round {round} of 7')</pre>
+  </div>
+</div>
+
+<div class="note">
+  <strong>Template literals</strong> use backticks (<code>`</code>), not quotes.
+  <code>${expression}</code> inside them evaluates and inserts the result — identical
+  to Python's f-strings with <code>{expression}</code>. They also support multi-line
+  strings without escape characters, which f-strings don't.
+</div>
+
+<div class="try-it">
+  <div class="try-label">Try it — printBoard + template literals</div>
+  <textarea class="try-code">function printBoard(board) {
+  const symbols = { 0: '.', 1: '*', 2: '·' };
+  for (const row of board) {
+    console.log(row.map(cell => symbols[cell]).join(' '));
+  }
+}
+
+const board = [
+  [0,0,1,0,0],
+  [0,0,2,0,0],
+  [1,2,1,2,1],
+  [0,0,2,0,0],
+  [0,0,1,0,0],
+];
+
+console.log('--- Board ---');
+printBoard(board);
+
+// Template literals
+const flowers = board.flat().filter(c => c === 1).length;
+const seeds   = board.flat().filter(c => c === 2).length;
+const empties = board.flat().filter(c => c === 0).length;
+console.log(`Flowers: ${flowers}, Seeds: ${seeds}, Empty: ${empties}`);
+
+// Multi-line template literal
+const summary = `Board summary:
+  🌼 flowers: ${flowers}
+  · seeds:    ${seeds}
+  . empty:    ${empties}`;
+console.log(summary);</textarea>
+  <button class="run-btn" onclick="runCode(this)">Run</button>
+  <pre class="try-output"></pre>
+</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ SUMMARY -->
+<h2>Quick Reference</h2>
+
+<table style="width:100%;border-collapse:collapse;font-size:0.87rem;margin-bottom:2rem;">
+  <thead>
+    <tr style="border-bottom:2px solid var(--gold-dim);">
+      <th style="text-align:left;padding:0.5rem 0.7rem;color:var(--gold);">JS</th>
+      <th style="text-align:left;padding:0.5rem 0.7rem;color:var(--gold);">Python</th>
+      <th style="text-align:left;padding:0.5rem 0.7rem;color:var(--gold);">Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>===</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>==</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">No type coercion in JS</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>const / let</code></td>
+      <td style="padding:0.45rem 0.7rem;">assignment</td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);"><code>const</code> ≈ re-assign guard</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>Array.from({length:n}, fn)</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>[fn() for _ in range(n)]</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">Create array by factory</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>[...arr]</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>arr[:]</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">Shallow copy via spread</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>arr.map(fn)</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>[fn(x) for x in arr]</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">Returns new array</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>arr.filter(fn)</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>[x for x in arr if fn(x)]</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">Returns new array</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>arr.every(fn)</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>all(fn(x) for x in arr)</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">Short-circuits</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>arr.some(fn)</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>any(fn(x) for x in arr)</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">Short-circuits</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>arr.includes(x)</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>x in arr</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">Value membership test</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>arr.flat()</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>list(chain.from_iterable(arr))</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">Flatten one level</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>arr.join(sep)</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>sep.join(arr)</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">Strings only in JS too</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>arr.push(x)</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>arr.append(x)</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">Mutates in place</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>Object.keys(obj)</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>list(d.keys())</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">Returns array of keys</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>for (const x of arr)</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>for x in arr</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">Iterate values</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>const [a, b] = arr</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>a, b = arr</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">Destructuring / unpacking</td>
+    </tr>
+    <tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:0.45rem 0.7rem;"><code>`Hello ${name}`</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>f'Hello {name}'</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">Template literal / f-string</td>
+    </tr>
+    <tr>
+      <td style="padding:0.45rem 0.7rem;"><code>console.log(x)</code></td>
+      <td style="padding:0.45rem 0.7rem;"><code>print(x)</code></td>
+      <td style="padding:0.45rem 0.7rem;color:var(--muted);">Output (browser console)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p style="color:var(--muted);font-size:0.85rem;text-align:center;margin-top:2rem;">
+  Dandelions game engine by <a href="https://github.com/mycarta/Dandelions">mycarta</a> ·
+  Game concept from <em>Math Games with Bad Drawings</em> by Ben Orlin
+</p>
+
+</div><!-- /page -->
+
+<script>
+  function runCode(btn) {
+    const container = btn.closest('.try-it');
+    const code = container.querySelector('textarea').value;
+    const output = container.querySelector('.try-output');
+
+    // Capture console.log output
+    const lines = [];
+    const origLog = console.log;
+    console.log = (...args) => {
+      lines.push(args.map(a => {
+        if (typeof a === 'object' && a !== null) {
+          try { return JSON.stringify(a); } catch { return String(a); }
+        }
+        return String(a);
+      }).join(' '));
+      origLog(...args);
+    };
+
+    output.className = 'try-output';
+    try {
+      // Inject DIRECTIONS into scope for snippets that need it
+      const fullCode = `
+        const DIRECTIONS = {
+          N:[-1,0], NE:[-1,1], E:[0,1], SE:[1,1],
+          S:[1,0],  SW:[1,-1], W:[0,-1], NW:[-1,-1]
+        };
+        ${code}
+      `;
+      // eslint-disable-next-line no-eval
+      (new Function(fullCode))();
+      output.textContent = lines.length ? lines.join('\n') : '(no output)';
+    } catch (err) {
+      output.className = 'try-output error';
+      output.textContent = err.toString();
+    } finally {
+      console.log = origLog;
+    }
+
+    output.style.display = 'block';
+  }
+</script>
+</body>
+</html>
