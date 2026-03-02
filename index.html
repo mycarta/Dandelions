@@ -2,12 +2,81 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Dandelions</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Dandelions — open console to test</h1>
+  <div id="page">
+
+    <div id="app">
+      <header>
+        <h1>Dandelions</h1>
+        <div id="round-counter">Round 1 of 7</div>
+      </header>
+
+      <main>
+        <svg id="grid"
+             viewBox="0 0 500 500"
+             role="grid"
+             aria-label="Game board"
+             xmlns="http://www.w3.org/2000/svg">
+        </svg>
+
+        <div id="compass-wrap">
+          <svg id="compass"
+               viewBox="-110 -110 220 220"
+               role="group"
+               aria-label="Wind compass"
+               xmlns="http://www.w3.org/2000/svg">
+          </svg>
+        </div>
+
+        <div id="status" aria-live="polite">Tap a square to plant</div>
+      </main>
+
+      <footer>
+        <button id="reset-btn" type="button">New Game</button>
+      </footer>
+    </div>
+
+    <aside id="how-to-play" aria-label="How to play">
+      <button id="htp-toggle" type="button"
+              aria-expanded="false"
+              aria-controls="htp-body">How to Play &#x25B8;</button>
+
+      <div id="htp-body" class="htp-collapsed">
+        <h2>How to Play</h2>
+
+        <p>Dandelions is a game of space, time, and strategy for two players
+           — in this version, you play the Dandelions against the Wind (computer).</p>
+
+        <p><strong>YOUR GOAL:</strong> Cover every square in the meadow with flowers or seeds.<br>
+           <strong>WIND'S GOAL:</strong> Leave at least one square empty.</p>
+
+        <p>Each round:</p>
+        <ol>
+          <li>You plant one flower anywhere on the grid (on an empty square, or on top of a seed).</li>
+          <li>The Wind blows in one direction, carrying seeds from every flower on the board
+              into all empty squares downwind. Seeds land in every vacant square along the
+              line — they skip over flowers and other seeds without stopping.</li>
+        </ol>
+
+        <p>The game lasts 7 rounds. The Wind must use a different direction each round
+           — one of the 8 compass directions will never be used. If the whole meadow is
+           covered, you win. If any square remains empty, the Wind wins.</p>
+
+        <p><strong>TIP:</strong> Once two flowers can reach the same square from different
+           wind directions, that square is guaranteed — the Wind can skip one direction,
+           but not both. Learn to spot these, then focus on the squares still in doubt.</p>
+
+        <p class="htp-attribution">Based on <em>Dandelions</em> from
+           <em>Math Games with Bad Drawings</em> by Ben Orlin.</p>
+      </div>
+    </aside>
+
+  </div>
+
   <script src="game.js"></script>
 </body>
 </html>
