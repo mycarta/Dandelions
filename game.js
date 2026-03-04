@@ -242,18 +242,20 @@ function renderBoard() {
       if (val === 0) {
         g.classList.add('empty');
         text.textContent = '';
-        text.style.transform = '';
+        text.removeAttribute('transform');
       } else if (val === 1) {
         g.classList.add('flower');
         text.textContent = '\u2731';   // ✱ heavy asterisk
         // Assign a random rotation once per cell so flowers look unique
         const key = `${r}-${c}`;
         if (!(key in cellRotation)) cellRotation[key] = Math.round(Math.random() * 80 - 40);
-        text.style.transform = `rotate(${cellRotation[key]}deg)`;
+        const cx = c * 100 + 50;
+        const cy = r * 100 + 50;
+        text.setAttribute('transform', `rotate(${cellRotation[key]}, ${cx}, ${cy})`);
       } else {
         g.classList.add('seed');
         text.textContent = '\u2022';   // • bullet
-        text.style.transform = '';
+        text.removeAttribute('transform');
       }
     }
   }

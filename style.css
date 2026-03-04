@@ -171,12 +171,10 @@ main {
   stroke-width: 3;
 }
 
-/* Cell symbols — transform-box allows scale/rotate from center within SVG */
+/* Cell symbols */
 .cell-symbol {
   pointer-events: none;
   user-select: none;
-  transform-box: fill-box;
-  transform-origin: center;
 }
 
 .cell.flower .cell-symbol {
