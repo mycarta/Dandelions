@@ -325,7 +325,6 @@ function handleCellClick(row, col) {
       const key = `tut-${row}-${col}`;
       if (!(key in cellRotation)) cellRotation[key] = Math.round(Math.random() * 80 - 40);
       renderBoardFrom(tutState.board);
-      animateFlowerPop(row, col);
       // Defer the advance so the current event-handler and paint cycle
       // both complete before showTutStep mutates the DOM again.
       setTimeout(() => { if (tutState.active) advanceTutStep(); }, 0);
@@ -341,7 +340,6 @@ function handleCellClick(row, col) {
 
   board = placeFlower(board, row, col);
   renderBoard();
-  animateFlowerPop(row, col);
   renderRound();
   setStatus('Wind is gathering\u2026');
 
@@ -399,20 +397,6 @@ function endGame() {
 }
 
 // ── Animation Helpers ────────────────────────────────────────────────────────
-
-// Pop a newly placed flower (SVG text) with an opacity flash.
-// The SVG transform attribute (set by renderBoard/renderBoardFrom) is untouched
-// throughout — the animation only animates opacity, never CSS transform.
-function animateFlowerPop(r, c) {
-  const text = document.querySelector(`#cell-${r}-${c} text`);
-  if (!text) return;
-  text.classList.remove('flower-pop');
-  void text.getBoundingClientRect();
-  text.classList.add('flower-pop');
-  text.addEventListener('animationend', () => {
-    text.classList.remove('flower-pop');
-  }, { once: true });
-}
 
 // Stagger-animate seed cells appearing in order of distance along the wind ray.
 // Call AFTER renderBoard() so the DOM already has the new seed symbols.
