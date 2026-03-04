@@ -400,22 +400,17 @@ function endGame() {
 
 // ── Animation Helpers ────────────────────────────────────────────────────────
 
-// Pop a newly placed flower (SVG text) from scale 0 → 1, preserving its rotation.
+// Pop a newly placed flower (SVG text) with an opacity flash.
+// The SVG transform attribute (set by renderBoard/renderBoardFrom) is untouched
+// throughout — the animation only animates opacity, never CSS transform.
 function animateFlowerPop(r, c) {
   const text = document.querySelector(`#cell-${r}-${c} text`);
   if (!text) return;
-  // Read the rotation already set by renderBoard/renderBoardFrom and thread it
-  // into the keyframe via a CSS custom property so the pop honours the angle.
-  const match = (text.style.transform || '').match(/rotate\((-?\d+)deg\)/);
-  const rotDeg = match ? match[1] : '0';
-  text.style.setProperty('--fr', `${rotDeg}deg`);
   text.classList.remove('flower-pop');
   void text.getBoundingClientRect();
   text.classList.add('flower-pop');
   text.addEventListener('animationend', () => {
     text.classList.remove('flower-pop');
-    text.style.removeProperty('--fr');
-    text.style.transform = `rotate(${rotDeg}deg)`;   // reassert after keyframe
   }, { once: true });
 }
 
@@ -679,18 +674,20 @@ function renderBoardFrom(brd) {
 
       if (val === 0) {
         g.classList.add('empty');
-        text.textContent   = '';
-        text.style.transform = '';
+        text.textContent = '';
+        text.removeAttribute('transform');
       } else if (val === 1) {
         g.classList.add('flower');
         text.textContent = '\u2731';
         const key = `tut-${r}-${c}`;
         if (!(key in cellRotation)) cellRotation[key] = Math.round(Math.random() * 80 - 40);
-        text.style.transform = `rotate(${cellRotation[key]}deg)`;
+        const cx = c * 100 + 50;
+        const cy = r * 100 + 50;
+        text.setAttribute('transform', `rotate(${cellRotation[key]}, ${cx}, ${cy})`);
       } else {
         g.classList.add('seed');
-        text.textContent   = '\u2022';
-        text.style.transform = '';
+        text.textContent = '\u2022';
+        text.removeAttribute('transform');
       }
     }
   }
