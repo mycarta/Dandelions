@@ -762,4 +762,72 @@ footer {
 
 #game-attribution a:hover { color: #a8d8a8; }
 
+/* ── Short screens: max-height 700px (e.g. iPhone SE 375×667) ────────────── */
+
+@media (max-height: 700px) {
+  body {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  #app,
+  main {
+    gap: 9px;
+  }
+
+  h1 {
+    font-size: clamp(1.3rem, 6vw, 1.8rem);
+  }
+
+  #round-counter {
+    margin-top: 2px;
+  }
+
+  #header-controls {
+    margin-top: 6px;
+  }
+
+  .grid-wrap {
+    max-width: 285px;
+  }
+
+  #compass-wrap {
+    max-width: 165px;   /* ~75% of 220px */
+  }
+
+  #game-attribution {
+    display: none;
+  }
+}
+
+/* ── Very short screens: max-height 600px ────────────────────────────────── */
+
+@media (max-height: 600px) {
+  body {
+    padding-top: 8px;
+    padding-bottom: 4px;
+  }
+
+  #app,
+  main {
+    gap: 6px;
+  }
+
+  h1 {
+    font-size: clamp(1.1rem, 5vw, 1.5rem);
+  }
+
+  #header-controls {
+    margin-top: 4px;
+    gap: 6px;
+  }
+
+  .grid-wrap {
+    max-width: 240px;
+  }
+
+  #compass-wrap {
+    max-width: 132px;   /* ~60% of 220px */
+  }
+}
 

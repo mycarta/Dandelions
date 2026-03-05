@@ -1,4 +1,4 @@
-const CACHE = 'dandelions-v3';
+const CACHE = 'dandelions-v4';
 
 const ASSETS = [
   '.',
