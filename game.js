@@ -101,6 +101,8 @@ function printBoard(board) {
 
 let board, round, usedDirections, lastUsedDirection, gameOver, inputLocked;
 let difficulty = 'easy';   // 'easy' | 'hard' — persists across resets
+let gameMode = 'cpu';      // 'cpu' | '2p' — persists across resets
+let waitingForWind = false; // true when it's the Wind player's turn in 2P mode
 
 // Per-cell random rotation so each flower looks slightly different
 const cellRotation = {};
@@ -112,8 +114,9 @@ function initState() {
   lastUsedDirection = null;
   gameOver          = false;
   inputLocked       = false;
+  waitingForWind    = false;
   Object.keys(cellRotation).forEach(k => delete cellRotation[k]);
-  // difficulty is intentionally not reset here
+  // difficulty and gameMode are intentionally not reset here
 }
 
 // ── SVG helpers ──────────────────────────────────────────────────────────────
@@ -222,6 +225,9 @@ function buildCompass() {
     });
     text.textContent = dir;
     g.appendChild(text);
+
+    // Compass direction click handler (active only in 2P Wind turn)
+    g.addEventListener('click', () => handleCompassClick(dir));
 
     svg.appendChild(g);
   }
@@ -341,10 +347,21 @@ function handleCellClick(row, col) {
   board = placeFlower(board, row, col);
   renderBoard();
   renderRound();
-  setStatus('Wind is gathering\u2026');
 
-  // Brief pause so the player sees their flower before seeds spread
-  setTimeout(windTurn, 500);
+  if (gameMode === '2p') {
+    setStatus('Flower planted!');
+    // Show pass overlay for Wind player
+    setTimeout(() => showPassOverlay('Pass to the Wind player', () => {
+      waitingForWind = true;
+      enableCompassTaps();
+      setStatus('Wind: tap a direction on the compass');
+      inputLocked = false;
+    }), 300);
+  } else {
+    setStatus('Wind is gathering\u2026');
+    // Brief pause so the player sees their flower before seeds spread
+    setTimeout(windTurn, 500);
+  }
 }
 
 function windTurn() {
@@ -378,6 +395,79 @@ function windTurn() {
     }, 1200);
   }
 }
+
+// ── 2-Player Pass & Compass Tap ──────────────────────────────────────────────
+
+function showPassOverlay(msg, onReady) {
+  const overlay = document.getElementById('pass-overlay');
+  const msgEl   = document.getElementById('pass-msg');
+  const btn     = document.getElementById('pass-ready-btn');
+
+  msgEl.textContent = msg;
+  overlay.hidden = false;
+
+  const handler = () => {
+    btn.removeEventListener('click', handler);
+    overlay.hidden = true;
+    onReady();
+  };
+  btn.addEventListener('click', handler);
+}
+
+function enableCompassTaps() {
+  const unused = getUnusedDirections(usedDirections);
+  for (const dir of Object.keys(DIRECTIONS)) {
+    const g = document.getElementById(`dir-${dir}`);
+    if (unused.includes(dir)) {
+      g.classList.add('tappable');
+    }
+  }
+}
+
+function disableCompassTaps() {
+  for (const dir of Object.keys(DIRECTIONS)) {
+    document.getElementById(`dir-${dir}`).classList.remove('tappable');
+  }
+}
+
+function handleCompassClick(dir) {
+  if (gameMode !== '2p' || !waitingForWind) return;
+  if (usedDirections.includes(dir)) return;   // already used
+
+  waitingForWind = false;
+  inputLocked = true;
+  disableCompassTaps();
+
+  usedDirections.push(dir);
+  lastUsedDirection = dir;
+
+  const beforeBoard = copyBoard(board);
+  board = blowWind(board, dir);
+  renderBoard();
+  animateSeedsBlow(beforeBoard, dir);
+  renderCompass(dir);
+  setStatus(`Wind blows ${dir}!`);
+
+  if (checkWin(board)) {
+    setTimeout(endGame, 900);
+    return;
+  }
+
+  if (round >= 7) {
+    setTimeout(endGame, 900);
+  } else {
+    // Show pass overlay for Dandelion player
+    setTimeout(() => {
+      renderCompass(null);
+      showPassOverlay('Pass to the Dandelion player', () => {
+        setStatus('Tap a square to plant');
+        inputLocked = false;
+      });
+    }, 1200);
+  }
+}
+
+// ── Game End ─────────────────────────────────────────────────────────────────
 
 function endGame() {
   gameOver = true;
@@ -691,6 +781,8 @@ function endTutorial() {
 function resetGame() {
   document.getElementById('app').classList.remove('win', 'lose');
   document.getElementById('confetti').innerHTML = '';
+  document.getElementById('pass-overlay').hidden = true;
+  disableCompassTaps();
   initState();   // also clears cellRotation
   renderBoard();
   renderCompass(null);
@@ -718,6 +810,19 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.diff-btn').forEach(b =>
         b.classList.toggle('active', b.dataset.diff === difficulty)
       );
+    });
+  });
+
+  // Mode selector
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      gameMode = btn.dataset.mode;
+      document.querySelectorAll('.mode-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.mode === gameMode)
+      );
+      // Hide/show difficulty toggle based on mode
+      document.getElementById('difficulty').classList.toggle('hidden-toggle', gameMode === '2p');
+      resetGame();
     });
   });
 

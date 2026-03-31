@@ -19,6 +19,10 @@
         <h1>Dandelions</h1>
         <div id="round-counter">Round 1 of 7</div>
         <div id="header-controls">
+          <div id="mode-selector" role="group" aria-label="Game mode">
+            <button class="mode-btn active" data-mode="cpu" type="button">vs Computer</button>
+            <button class="mode-btn"        data-mode="2p"  type="button">2 Players</button>
+          </div>
           <div id="difficulty" role="group" aria-label="Wind difficulty">
             <button class="diff-btn active" data-diff="easy" type="button">Easy Wind</button>
             <button class="diff-btn"        data-diff="hard" type="button">Hard Wind</button>
@@ -58,6 +62,12 @@
 
         <!-- Confetti container for win celebration -->
         <div id="confetti" aria-hidden="true"></div>
+
+        <!-- Pass-the-phone overlay for 2-player mode -->
+        <div id="pass-overlay" hidden>
+          <p id="pass-msg">Pass to the Wind player</p>
+          <button id="pass-ready-btn" type="button">Ready</button>
+        </div>
       </main>
 
       <footer>

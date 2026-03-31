@@ -80,6 +80,8 @@ h1 {
   background: #112b11;
 }
 
+#difficulty.hidden-toggle { display: none; }
+
 .diff-btn {
   background: transparent;
   color: #7aaa7a;
@@ -92,6 +94,47 @@ h1 {
   transition: background 0.18s, color 0.18s;
   -webkit-tap-highlight-color: transparent;
   line-height: 1.4;
+}
+
+/* ── Mode selector ────────────────────────────────────────────────────────── */
+
+#mode-selector {
+  display: inline-flex;
+  border: 1px solid #3a6e3a;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #112b11;
+}
+
+.mode-btn {
+  background: transparent;
+  color: #7aaa7a;
+  border: none;
+  padding: 0.35em 1.1em;
+  font-size: clamp(0.75rem, 3vw, 0.85rem);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  -webkit-tap-highlight-color: transparent;
+  line-height: 1.4;
+}
+
+.mode-btn:first-child { border-right: 1px solid #3a6e3a; }
+
+.mode-btn.active {
+  background: #2e7d32;
+  color: #fff;
+}
+
+.mode-btn:not(.active):hover {
+  background: #1f4a1f;
+  color: #c5e8c5;
+}
+
+.mode-btn:focus-visible {
+  outline: 2px solid #f5e642;
+  outline-offset: -2px;
 }
 
 .diff-btn:first-child { border-right: 1px solid #3a6e3a; }
@@ -829,5 +872,76 @@ footer {
   #compass-wrap {
     max-width: 132px;   /* ~60% of 220px */
   }
+}
+
+/* ── Pass-the-phone overlay (2-player mode) ──────────────────────────────── */
+
+#pass-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #1a3d1a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+#pass-msg {
+  font-size: clamp(1.3rem, 5.5vw, 1.8rem);
+  font-weight: 700;
+  color: #f5e642;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  padding: 0 20px;
+}
+
+#pass-ready-btn {
+  background: #2e7d32;
+  color: #fff;
+  border: 2px solid #4caf50;
+  border-radius: 999px;
+  padding: 0.7em 3em;
+  font-size: clamp(1rem, 4vw, 1.2rem);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.1s, box-shadow 0.18s;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.35);
+  -webkit-tap-highlight-color: transparent;
+}
+
+#pass-ready-btn:hover {
+  background: #388e3c;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+}
+
+#pass-ready-btn:active {
+  background: #1b5e20;
+  transform: scale(0.96);
+}
+
+/* ── Compass tappable directions (2P Wind turn) ──────────────────────────── */
+
+.dir-group.tappable {
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.dir-group.tappable .dir-bg {
+  fill: rgba(168, 216, 168, 0.12);
+  stroke: #a8d8a8;
+  stroke-width: 1.5;
+  transition: fill 0.15s, stroke 0.15s;
+}
+
+.dir-group.tappable:hover .dir-bg {
+  fill: rgba(245, 230, 66, 0.18);
+  stroke: #f5e642;
+}
+
+.dir-group.tappable .dir-text {
+  fill: #e8f5e8;
 }
 
