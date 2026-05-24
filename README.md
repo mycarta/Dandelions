@@ -35,3 +35,7 @@ Based on Dandelions from *Math Games with Bad Drawings* by Ben Orlin (Black Dog 
 ## License
 
 MIT
+
+## Also by the developer
+
+[Lunenburg Events](https://mycarta.github.io/lunapp/) — a free, ad-free community events app for Lunenburg, Nova Scotia.
