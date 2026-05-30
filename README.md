@@ -38,4 +38,4 @@ MIT
 
 ## Also by the developer
 
-[Lunenburg Events](https://mycarta.github.io/lunapp/) — a free, ad-free community events app for Lunenburg, Nova Scotia.
+[Lunenburg Events](https://lunenburg.fingerpost.ca)) — a free, ad-free community events app for Lunenburg, Nova Scotia.
