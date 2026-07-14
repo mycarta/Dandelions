@@ -132,6 +132,26 @@ function checkpoint(label, explanation) {
   report(explanation);
 }
 
+// Rebuilds Test 5's 9-move prefix (through the Wind turn 5 checkpoint, right
+// before its gust) using the real engine directly — no narration, no
+// state-cloning. Each of Test 5's two branches calls this fresh to get its
+// own independent board; since the engine is deterministic, replaying the
+// same moves twice reproduces the exact checkpoint board both times.
+function replayTest5Prefix() {
+  var board = createBoard();
+  var used = [];
+  board = placeFlower(board, 2, 1);
+  board = blowWind(board, 'N'); used.push('N');
+  board = placeFlower(board, 2, 3);
+  board = blowWind(board, 'NW'); used.push('NW');
+  board = placeFlower(board, 2, 0);
+  board = blowWind(board, 'E'); used.push('E');
+  board = placeFlower(board, 2, 2);
+  board = blowWind(board, 'W'); used.push('W');
+  board = placeFlower(board, 2, 4);
+  return { board: board, used: used };
+}
+
 // ── Test 1 — Orlin's guaranteed square (Math Games with Bad Drawings, p.58) ─
 function test1() {
   report('');
@@ -353,6 +373,77 @@ function test5() {
   assert(smartChoice === 'SE',
     'Smart Wind reserves NE (that would save 5 squares still in doubt) and blows SE instead (0 of those squares ' +
     'at risk; SE wins the tie-break over SW) (got ' + smartChoice + ')');
+
+  // ── Fork: play out the two choices instead of just asserting them ──────
+  // No state-cloning added to the engine — each branch replays the same
+  // 9-move prefix from scratch, then diverges on the Wind turn 5 gust.
+
+  report('');
+  report('--- BRANCH A: what happens if the Greedy Wind gets its way ---');
+  var prefixA = replayTest5Prefix();
+  var gA = gust(prefixA.board, 'NE', prefixA.used);
+  report(
+    'One gust, and the game is decided: every remaining empty square except (0,0) is now guaranteed no matter ' +
+    'what the Wind does with its last two gusts, and the Dandelions still hold two plantings — one of them ' +
+    'covers (0,0). The Dandelions cannot lose from here.');
+
+  assert(setsEqual(gA.newSeeds, ['0-2', '0-3', '0-4', '1-3', '1-4']),
+    'the Wind blows NE -> new seeds land at exactly (0,2), (0,3), (0,4), (1,3), (1,4)');
+
+  var availableA = getUnusedDirections(prefixA.used);
+  var cA = classifyBoard(gA.board, availableA, blowWind);
+  var emptyExceptOriginA = [];
+  for (var ra = 0; ra < 5; ra++) {
+    for (var ca = 0; ca < 5; ca++) {
+      if (gA.board[ra][ca] === 0 && !(ra === 0 && ca === 0)) emptyExceptOriginA.push(cellKey(ra, ca));
+    }
+  }
+  var guaranteedKeysA = cA.guaranteed.map(function (sq) { return cellKey(sq.row, sq.col); });
+  assert(setsEqual(guaranteedKeysA, emptyExceptOriginA),
+    'every empty square except (0,0) is guaranteed against any 2 gusts the Wind still has left from {SE, S, SW}');
+
+  report('');
+  report('--- BRANCH B: what happens when the Smart Wind reserves NE ---');
+  var prefixB = replayTest5Prefix();
+  var gB = gust(prefixB.board, 'SE', prefixB.used);
+  report(
+    'The five squares in the top-right stay in doubt. Better: as long as the Wind never blows NE, no gust can ' +
+    'ever reach row 0 again — N and NW are spent, and no flower anywhere can threaten row 0 from above. Four ' +
+    'empty squares — (0,0), (0,2), (0,3), (0,4) — can now only be covered by planting on them directly, and the ' +
+    'Dandelions have just two plantings left. The Wind wins by at least two squares, no matter what.');
+
+  assert(setsEqual(gB.newSeeds, ['3-1', '3-2', '3-3', '3-4', '4-2', '4-3', '4-4']),
+    'the Wind blows SE -> new seeds land at exactly (3,1), (3,2), (3,3), (3,4), (4,2), (4,3), (4,4)');
+
+  var availableB = getUnusedDirections(prefixB.used);
+  var cB = classifyBoard(gB.board, availableB, blowWind);
+  var inDoubtKeysB = cB.inDoubt.map(function (sq) { return cellKey(sq.row, sq.col); });
+  assert(setsEqual(inDoubtKeysB, ['0-2', '0-3', '0-4', '1-3', '1-4']),
+    'still in doubt: exactly (0,2), (0,3), (0,4), (1,3), (1,4)');
+  assert(cB.inDoubt.every(function (sq) { return sq.direction === 'NE'; }),
+    'every square still in doubt can only be reached via NE');
+
+  // Verify by iterating every possible flower position — not by hand-waving —
+  // that with NE excluded, S and SW can never seed row 0 from anywhere on the board.
+  var rowZeroEverSeeded = false;
+  for (var fr = 0; fr < 5 && !rowZeroEverSeeded; fr++) {
+    for (var fc = 0; fc < 5 && !rowZeroEverSeeded; fc++) {
+      var testBoard = placeFlower(createBoard(), fr, fc);
+      ['S', 'SW'].forEach(function (d) {
+        var afterTest = blowWind(testBoard, d);
+        for (var cc = 0; cc < 5; cc++) {
+          if (afterTest[0][cc] === 2) rowZeroEverSeeded = true;
+        }
+      });
+    }
+  }
+  assert(!rowZeroEverSeeded,
+    'with NE excluded, no square in row 0 can ever be seeded via S or SW from any flower position on the board (all 25 positions checked)');
+
+  report('');
+  report(
+    'Same position, one different gust: Branch A is a forced Dandelions win, Branch B a forced Wind win. That ' +
+    'is the difference between minimizing seeds now and protecting the right direction for later.');
 }
 
 test1();
