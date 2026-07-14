@@ -178,8 +178,11 @@ function test2() {
   board = plant(board, 2, 2, used);
 
   checkpoint('Wind turn 1',
-    'The square at (2,4) is still in doubt: with only one flower on the board, E is the only direction that ' +
-    'can reach it — no second flower backs it up yet, so the Wind can still save it by never blowing E.');
+    'With a single flower, nothing is guaranteed yet: every one of the 16 squares on its row, column, and ' +
+    'diagonals is still in doubt — each reachable by exactly one direction, so the Wind can save any one of ' +
+    'them by never blowing that direction. The other 8 squares are out of the wind’s reach entirely. (2,4), ' +
+    'reachable only via E, is the example the checks below verify. It takes a second flower to create the ' +
+    'first guaranteed square — which is what Test 1 showed.');
 
   var available = getUnusedDirections(used);
   assert(setsEqual(available, ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']), 'not yet blown: ' + available.join(', '));
@@ -188,6 +191,8 @@ function test2() {
   var sq24 = c2.inDoubt.filter(function (s) { return s.row === 2 && s.col === 4; })[0];
   assert(!!sq24 && sq24.direction === 'E', '(2,4) is still in doubt — only E can still seed it');
   assert(c2.guaranteed.length === 0, 'no squares are guaranteed yet (impossible with a single flower)');
+  assert(c2.inDoubt.length === 16, 'exactly 16 squares are still in doubt — every square on the flower’s row, column, and both diagonals');
+  assert(c2.unreachable.length === 8, 'exactly 8 squares are out of the wind’s reach — every other empty square on the board');
 }
 
 // ── Test 3 — Same direction, different flowers: between vs. beyond ─────────
