@@ -245,7 +245,7 @@ function test3() {
 function test4() {
   report('');
   report('========================================================');
-  report('TEST 4 — Seeds pass over occupied squares without stopping (our generalization)');
+  report('TEST 4 — Foundation check: seeds pass over occupied squares without stopping (rule the smart Wind\'s classifier depends on)');
   report('========================================================');
 
   var board = createBoard();
