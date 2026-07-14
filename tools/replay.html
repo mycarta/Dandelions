@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dandelions replay driver</title>
+<style>
+  body { background: #0d1f0d; color: #d8ecd8; }
+  #replay-log { font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>Dandelions — replay driver</h1>
+<p>Five scripted verification games run through the real engine. See below for the full trace and assertions.</p>
+<!--
+  Loads the real engine (game.js) and the smart-Wind classifier
+  (wind-ai-smart.js) verbatim, then tools/replay-tests.js, which runs the five
+  scripted games and appends its trace + assertions as a <pre> below.
+  game.js's DOMContentLoaded handler builds a grid/compass UI this page
+  doesn't have; any error it throws there is harmless and unrelated to the
+  synchronous test script, which has already finished by the time that event
+  fires.
+-->
+<script src="../game.js"></script>
+<script src="../wind-ai-smart.js"></script>
+<script src="replay-tests.js"></script>
+</body>
+</html>

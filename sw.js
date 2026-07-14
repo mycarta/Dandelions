@@ -1,9 +1,10 @@
-const CACHE = 'dandelions-v5';
+const CACHE = 'dandelions-v6';
 
 const ASSETS = [
   '.',
   'index.html',
   'game.js',
+  'wind-ai-smart.js',
   'style.css',
   'manifest.json',
   'icon-192.png',

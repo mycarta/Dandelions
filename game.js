@@ -100,7 +100,7 @@ function printBoard(board) {
 // ── Game State ───────────────────────────────────────────────────────────────
 
 let board, round, usedDirections, lastUsedDirection, gameOver, inputLocked;
-let difficulty = 'easy';   // 'easy' | 'hard' — persists across resets
+let difficulty = 'easy';   // 'easy' | 'hard' | 'expert' — persists across resets
 let gameMode = 'cpu';      // 'cpu' | '2p' — persists across resets
 let waitingForWind = false; // true when it's the Wind player's turn in 2P mode
 
@@ -318,6 +318,17 @@ function pickGreedyDirection(board, usedDirections) {
   return best[Math.floor(Math.random() * best.length)];
 }
 
+// Expert strategy: guaranteed-square-aware. Squares reachable by ≥2 unused
+// directions are already lost (the Wind can only skip one direction all
+// game) and cost nothing further. Reserves whichever unused direction saves
+// the most still-in-doubt squares as the eventual skip, then blows whichever
+// remaining direction costs the fewest of those in-doubt squares right now.
+// See wind-ai-smart.js for the classifier this builds on.
+function pickExpertDirection(board, usedDirections) {
+  const unused = getUnusedDirections(usedDirections);
+  return chooseSmartDirection(board, unused, blowWind);
+}
+
 // ── Game Logic ───────────────────────────────────────────────────────────────
 
 function handleCellClick(row, col) {
@@ -366,9 +377,14 @@ function handleCellClick(row, col) {
 
 function windTurn() {
   const unused = getUnusedDirections(usedDirections);
-  const dir = difficulty === 'hard'
-    ? pickGreedyDirection(board, usedDirections)
-    : unused[Math.floor(Math.random() * unused.length)];
+  let dir;
+  if (difficulty === 'expert') {
+    dir = pickExpertDirection(board, usedDirections);
+  } else if (difficulty === 'hard') {
+    dir = pickGreedyDirection(board, usedDirections);
+  } else {
+    dir = unused[Math.floor(Math.random() * unused.length)];
+  }
 
   usedDirections.push(dir);
   lastUsedDirection = dir;   // remember for the "last-used" highlight

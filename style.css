@@ -137,7 +137,7 @@ h1 {
   outline-offset: -2px;
 }
 
-.diff-btn:first-child { border-right: 1px solid #3a6e3a; }
+.diff-btn:not(:last-child) { border-right: 1px solid #3a6e3a; }
 
 .diff-btn.active {
   background: #2e7d32;
