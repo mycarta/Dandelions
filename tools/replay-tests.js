@@ -7,6 +7,12 @@
 // against hand-verified checkpoints. Nothing here reimplements propagation —
 // every "would this seed X" check calls the real blowWind.
 //
+// The rendered trace narrates each move in plain English (Dandelions plant,
+// the Wind blows), shows the board with row/column coordinates, and displays
+// a compass rose of blown vs. still-available directions — adopting the
+// vocabulary of Ben Orlin's Dandelions chapter (guaranteed / still in doubt)
+// rather than the classifier's internal jargon.
+//
 // Only Test 1 is Ben Orlin's worked example (Math Games with Bad Drawings,
 // p.58). Tests 2-5 are our own generalization of the guaranteed-square idea
 // and must not be attributed to the book.
@@ -53,27 +59,6 @@ function setsEqual(a, b) {
   return ka.every(function (k) { return sb[k]; });
 }
 
-function snapshot(board) {
-  var symbols = { 0: '.', 1: '*', 2: 'o' };
-  return board.map(function (row) {
-    return row.map(function (cell) { return symbols[cell]; }).join(' ');
-  }).join('\n');
-}
-
-function logBoard(label, board, used) {
-  var available = getUnusedDirections(used);
-  report('');
-  report(label);
-  report(snapshot(board));
-  report('used: {' + used.join(', ') + '}  available: {' + available.join(', ') + '}');
-}
-
-function plant(board, row, col) {
-  var next = placeFlower(board, row, col);
-  if (next === null) throw new Error('Illegal plant at (' + row + ',' + col + ') — cell already has a flower');
-  return next;
-}
-
 function diffSeeds(before, after) {
   var seeds = [];
   for (var r = 0; r < 5; r++) {
@@ -84,12 +69,67 @@ function diffSeeds(before, after) {
   return seeds;
 }
 
-// Blow the wind, recording it as used and returning the new board + new seeds.
+// ── Presentation helpers ─────────────────────────────────────────────────────
+// Board with row/column coordinates, a compass rose of blown directions, and
+// plain-English narration of each move — Orlin's own words ("guaranteed",
+// "still in doubt") in place of the classifier's internal jargon.
+
+var COMPASS_ORDER = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+var compassNoteShown = false;
+
+function snapshot(board) {
+  var symbols = { 0: '.', 1: '*', 2: 'o' };
+  var lines = ['    ' + [0, 1, 2, 3, 4].join(' ')];
+  for (var r = 0; r < 5; r++) {
+    lines.push('  ' + r + ' ' + board[r].map(function (cell) { return symbols[cell]; }).join(' '));
+  }
+  return lines.join('\n');
+}
+
+function showCompassRose(used) {
+  var line = 'compass rose: ' + COMPASS_ORDER.map(function (d) {
+    return used.indexOf(d) !== -1 ? '[' + d + ']' : d;
+  }).join(' ');
+  report(line);
+  if (!compassNoteShown) {
+    compassNoteShown = true;
+    report('(the Wind blows each direction at most once; one direction is never blown.)');
+  }
+}
+
+function showState(board, used) {
+  report(snapshot(board));
+  showCompassRose(used);
+}
+
+// Narrate a plant, then show the board it produces.
+function plant(board, row, col, used) {
+  var onSeed = board[row][col] === 2;
+  report('');
+  report('Dandelions plant a flower at (' + row + ',' + col + ')' + (onSeed ? ' — on top of a seed' : ''));
+  var next = placeFlower(board, row, col);
+  if (next === null) throw new Error('Illegal plant at (' + row + ',' + col + ') — cell already has a flower');
+  showState(next, used);
+  return next;
+}
+
+// Narrate a gust, then show the board it produces. Records the direction as blown.
 function gust(board, dir, used) {
   var after = blowWind(board, dir);
   var newSeeds = diffSeeds(board, after);
   used.push(dir);
+  var n = newSeeds.length;
+  var phrase = n === 0 ? 'no new seeds' : (n + ' new seed' + (n === 1 ? '' : 's'));
+  report('');
+  report('The Wind blows ' + dir + ' -> ' + phrase);
+  showState(after, used);
   return { board: after, newSeeds: newSeeds };
+}
+
+function checkpoint(label, explanation) {
+  report('');
+  report('--- CHECKPOINT (' + label + ') ---');
+  report(explanation);
 }
 
 // ── Test 1 — Orlin's guaranteed square (Math Games with Bad Drawings, p.58) ─
@@ -102,71 +142,81 @@ function test1() {
   var board = createBoard();
   var used = [];
 
-  board = plant(board, 0, 3);
-  logBoard('After plant (0,3)', board, used);
+  board = plant(board, 0, 3, used);
 
   var g1 = gust(board, 'N', used);
   board = g1.board;
-  assert(g1.newSeeds.length === 0, 'Gust N produces zero new seeds (top-edge flower, ray leaves the board)');
-  logBoard('After gust N', board, used);
+  assert(g1.newSeeds.length === 0,
+    'the Wind blows N -> no new seeds — the flower sits on the board’s top edge, so the wind carries those seeds off the board');
 
-  board = plant(board, 2, 1);
-  logBoard('CHECKPOINT (Wind turn 2)', board, used);
+  board = plant(board, 2, 1, used);
+
+  checkpoint('Wind turn 2',
+    'The square at (2,3) is guaranteed: it lies south of one flower (0,3) and east of another (2,1). ' +
+    'The Wind can avoid blowing south, or east — but not both.');
 
   var available = getUnusedDirections(used);
-  assert(setsEqual(available, ['NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']), 'available = {NE,E,SE,S,SW,W,NW}');
+  assert(setsEqual(available, ['NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']), 'not yet blown: ' + available.join(', '));
 
   var c1 = classifyBoard(board, available, blowWind);
   var sq23 = c1.guaranteed.filter(function (g) { return g.row === 2 && g.col === 3; })[0];
-  assert(!!sq23, '(2,3) is classified GUARANTEED');
-  assert(!!sq23 && setsEqual(sq23.reachingDirections, ['S', 'E']), '(2,3) reachable via exactly {S from (0,3), E from (2,1)}');
+  assert(!!sq23, '(2,3) is guaranteed');
+  assert(!!sq23 && setsEqual(sq23.reachingDirections, ['S', 'E']),
+    '(2,3) is guaranteed by exactly two directions: S (from the flower at (0,3)) and E (from the flower at (2,1))');
 }
 
-// ── Test 2 — Clear in-doubt ──────────────────────────────────────────────────
+// ── Test 2 — A square still in doubt ────────────────────────────────────────
 function test2() {
   report('');
   report('========================================================');
-  report('TEST 2 — Clear in-doubt (our generalization, not from the book)');
+  report('TEST 2 — A square still in doubt (our generalization, not from the book)');
   report('========================================================');
 
   var board = createBoard();
   var used = [];
 
-  board = plant(board, 2, 2);
-  logBoard('CHECKPOINT (Wind turn 1)', board, used);
+  board = plant(board, 2, 2, used);
+
+  checkpoint('Wind turn 1',
+    'The square at (2,4) is still in doubt: with only one flower on the board, E is the only direction that ' +
+    'can reach it — no second flower backs it up yet, so the Wind can still save it by never blowing E.');
 
   var available = getUnusedDirections(used);
-  assert(setsEqual(available, ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']), 'all 8 directions available');
+  assert(setsEqual(available, ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']), 'not yet blown: ' + available.join(', '));
 
   var c2 = classifyBoard(board, available, blowWind);
   var sq24 = c2.inDoubt.filter(function (s) { return s.row === 2 && s.col === 4; })[0];
-  assert(!!sq24 && sq24.direction === 'E', '(2,4) reachable via exactly {E} -> IN_DOUBT');
-  assert(c2.guaranteed.length === 0, 'total GUARANTEED squares = 0 (impossible with a single flower)');
+  assert(!!sq24 && sq24.direction === 'E', '(2,4) is still in doubt — only E can still seed it');
+  assert(c2.guaranteed.length === 0, 'no squares are guaranteed yet (impossible with a single flower)');
 }
 
-// ── Test 3 — Same-direction trap + between/beyond distinction ──────────────
+// ── Test 3 — Same direction, different flowers: between vs. beyond ─────────
 function test3() {
   report('');
   report('========================================================');
-  report('TEST 3 — Same-direction trap + between/beyond (our generalization)');
+  report('TEST 3 — Same direction, different flowers: between vs. beyond (our generalization)');
   report('========================================================');
 
   var board = createBoard();
   var used = [];
 
-  board = plant(board, 0, 2);
-  logBoard('After plant (0,2)', board, used);
+  board = plant(board, 0, 2, used);
 
   var g1 = gust(board, 'NE', used);
   board = g1.board;
-  assert(g1.newSeeds.length === 0, 'Gust NE produces zero new seeds (top-edge flower)');
-  logBoard('After gust NE', board, used);
+  assert(g1.newSeeds.length === 0,
+    'the Wind blows NE -> no new seeds — the flower sits on the board’s top edge, so the wind carries those seeds off the board');
 
-  board = plant(board, 2, 2);
-  logBoard('CHECKPOINT (Wind turn 2)', board, used);
+  board = plant(board, 2, 2, used);
+
+  checkpoint('Wind turn 2',
+    'On this column, (1,2) sits between the two flowers and is guaranteed: south of (0,2) and north of (2,2) — ' +
+    'the Wind can avoid blowing south, or north, but not both. (3,2) and (4,2) sit beyond both flowers; each is ' +
+    'still in doubt, because both flowers can only reach them by blowing south — needing the same direction twice ' +
+    'is not a guarantee.');
 
   var available = getUnusedDirections(used);
-  assert(setsEqual(available, ['N', 'E', 'SE', 'S', 'SW', 'W', 'NW']), 'available = {N,E,SE,S,SW,W,NW}');
+  assert(setsEqual(available, ['N', 'E', 'SE', 'S', 'SW', 'W', 'NW']), 'not yet blown: ' + available.join(', '));
 
   var c3 = classifyBoard(board, available, blowWind);
   var byKey = {};
@@ -175,96 +225,101 @@ function test3() {
 
   var s42 = byKey[cellKey(4, 2)];
   assert(!!s42 && s42.status === 'IN_DOUBT' && s42.s.direction === 'S',
-    '(4,2): reachable from BOTH flowers but only via {S} -> IN_DOUBT (same direction is not a guarantee)');
+    '(4,2) is still in doubt — both flowers can reach it, but only by blowing S; two flowers needing the same direction is not a guarantee');
 
   var s12 = byKey[cellKey(1, 2)];
   assert(!!s12 && s12.status === 'GUARANTEED' && setsEqual(s12.s.reachingDirections, ['S', 'N']),
-    '(1,2) BETWEEN the flowers: via {S from (0,2), N from (2,2)} -> GUARANTEED');
+    '(1,2), between the flowers, is guaranteed: south of (0,2) and north of (2,2)');
 
   var s32 = byKey[cellKey(3, 2)];
   assert(!!s32 && s32.status === 'IN_DOUBT' && s32.s.direction === 'S',
-    '(3,2) BEYOND both flowers: via {S} only -> IN_DOUBT');
+    '(3,2), beyond both flowers, is still in doubt — only S can reach it');
 }
 
-// ── Test 4 — Occupied squares are skipped, not blocking ─────────────────────
+// ── Test 4 — Seeds pass over occupied squares without stopping ─────────────
 function test4() {
   report('');
   report('========================================================');
-  report('TEST 4 — Occupied squares are skipped, not blocking (our generalization)');
+  report('TEST 4 — Seeds pass over occupied squares without stopping (our generalization)');
   report('========================================================');
 
   var board = createBoard();
   var used = [];
 
-  board = plant(board, 0, 2);
-  logBoard('After plant (0,2)', board, used);
+  board = plant(board, 0, 2, used);
 
   var g = gust(board, 'S', used);
   board = g.board;
-  assert(setsEqual(g.newSeeds, ['1-2', '2-2', '3-2', '4-2']), 'Gust S seeds exactly {(1,2),(2,2),(3,2),(4,2)}');
-  logBoard('After gust S', board, used);
+  assert(setsEqual(g.newSeeds, ['1-2', '2-2', '3-2', '4-2']),
+    'the Wind blows S -> new seeds land at exactly (1,2), (2,2), (3,2), (4,2)');
 
-  board = plant(board, 2, 0);
-  logBoard('After plant (2,0)', board, used);
+  board = plant(board, 2, 0, used);
 
   g = gust(board, 'E', used);
   board = g.board;
   assert(setsEqual(g.newSeeds, ['0-3', '0-4', '2-1', '2-3', '2-4']),
-    'Gust E seeds exactly {(0,3),(0,4),(2,1),(2,3),(2,4)} — (2,2) is skipped, not blocking; (2,3)/(2,4) seeded beyond it');
-  logBoard('CHECKPOINT (after step 4)', board, used);
+    'the Wind blows E -> new seeds land at exactly (0,3), (0,4), (2,1), (2,3), (2,4)');
+
+  checkpoint('after step 4',
+    'The seed at (2,2) does not block the wind — it just sits there while seeds keep moving. From the flower at ' +
+    '(2,0), the squares (2,3) and (2,4), further downwind, still catch new seeds even though (2,2) is in the way.');
 }
 
-// ── Test 5 — Greedy self-destructs, smart Wind sees the skip ───────────────
+// ── Test 5 — Greedy Wind self-destructs; Smart Wind reserves the skip ─────
 function test5() {
   report('');
   report('========================================================');
-  report('TEST 5 — Greedy self-destructs, smart Wind sees the skip (showcase, our generalization)');
+  report('TEST 5 — Greedy Wind self-destructs; Smart Wind reserves the skip (showcase, our generalization)');
   report('========================================================');
 
   var board = createBoard();
   var used = [];
 
-  board = plant(board, 2, 1);
+  board = plant(board, 2, 1, used);
   var g = gust(board, 'N', used);
   board = g.board;
-  logBoard('After plant(2,1) + gust N', board, used);
 
-  board = plant(board, 2, 3);
+  board = plant(board, 2, 3, used);
   g = gust(board, 'NW', used);
   board = g.board;
-  logBoard('After plant(2,3) + gust NW', board, used);
 
-  board = plant(board, 2, 0);
+  board = plant(board, 2, 0, used);
   g = gust(board, 'E', used);
   board = g.board;
-  assert(setsEqual(g.newSeeds, ['2-2', '2-4']), 'Gust E seeds (2,2) and (2,4)');
-  logBoard('After plant(2,0) + gust E', board, used);
+  assert(setsEqual(g.newSeeds, ['2-2', '2-4']), 'the Wind blows E -> new seeds land at (2,2) and (2,4)');
 
-  board = plant(board, 2, 2);   // on top of a seed — legal
+  board = plant(board, 2, 2, used);   // on top of a seed — legal
   g = gust(board, 'W', used);
   board = g.board;
-  assert(g.newSeeds.length === 0, 'Gust W produces zero new seeds (row 2 fully occupied to the west)');
-  logBoard('After plant(2,2)-on-seed + gust W', board, used);
+  assert(g.newSeeds.length === 0,
+    'the Wind blows W -> no new seeds — row 2 is fully occupied to the west, so there is nothing left to seed');
 
-  board = plant(board, 2, 4);   // on top of a seed — legal
-  logBoard('CHECKPOINT (Wind turn 5)', board, used);
+  board = plant(board, 2, 4, used);   // on top of a seed — legal
+
+  checkpoint('Wind turn 5',
+    'Every empty square in the bottom two rows is guaranteed: each sits south of at least two of the five ' +
+    'flowers now filling row 2. The five squares in the top-right corner are still in doubt — NE is the only ' +
+    'direction left that can reach any of them. And (0,0) is out of the wind’s reach for now — safe unless a ' +
+    'new flower changes that.');
 
   var available = getUnusedDirections(used);
-  assert(setsEqual(used, ['N', 'NW', 'E', 'W']), 'used = {N,NW,E,W}');
-  assert(setsEqual(available, ['NE', 'SE', 'S', 'SW']), 'available = {NE,SE,S,SW}');
+  assert(setsEqual(used, ['N', 'NW', 'E', 'W']), 'the Wind has blown ' + used.join(', ') + ' so far');
+  assert(setsEqual(available, ['NE', 'SE', 'S', 'SW']), 'not yet blown: ' + available.join(', '));
 
   var c5 = classifyBoard(board, available, blowWind);
 
   var guaranteedRows34 = c5.guaranteed.filter(function (sq) { return sq.row === 3 || sq.row === 4; });
-  assert(guaranteedRows34.length === 10, 'every empty square in rows 3-4 (all 10) is GUARANTEED');
+  assert(guaranteedRows34.length === 10, 'every empty square in rows 3-4 (all 10 of them) is guaranteed');
 
   var inDoubtKeys = c5.inDoubt.map(function (sq) { return cellKey(sq.row, sq.col); });
   assert(setsEqual(inDoubtKeys, ['0-2', '0-3', '0-4', '1-3', '1-4']),
-    'IN_DOUBT = exactly {(0,2),(0,3),(0,4),(1,3),(1,4)}');
-  assert(c5.inDoubt.every(function (sq) { return sq.direction === 'NE'; }), 'every IN_DOUBT square is reachable via NE only');
+    'still in doubt: exactly (0,2), (0,3), (0,4), (1,3), (1,4)');
+  assert(c5.inDoubt.every(function (sq) { return sq.direction === 'NE'; }),
+    'every square still in doubt can only be reached via NE');
 
   var unreachableKeys = c5.unreachable.map(function (sq) { return cellKey(sq.row, sq.col); });
-  assert(setsEqual(unreachableKeys, ['0-0']), '(0,0) is UNREACHABLE (would need N or NW; both used)');
+  assert(setsEqual(unreachableKeys, ['0-0']),
+    '(0,0) is out of the wind’s reach (safe unless a new flower changes that) — it would need N or NW, and both are already blown');
 
   var expected = {
     NE: { immediateSeeds: 5, realCost: 5, skipValue: 5 },
@@ -277,15 +332,22 @@ function test5() {
     var want = expected[dir];
     assert(
       got.immediateSeeds === want.immediateSeeds && got.realCost === want.realCost && got.skipValue === want.skipValue,
-      dir + ': immediateSeeds=' + got.immediateSeeds + ' realCost=' + got.realCost + ' skipValue=' + got.skipValue + ' (expected ' + JSON.stringify(want) + ')'
+      dir + ': ' + got.immediateSeeds + ' new seeds this gust, ' +
+      got.realCost + ' squares still in doubt that this gust would seed, ' +
+      got.skipValue + ' squares saved if the Wind never blows this direction ' +
+      '(expected ' + want.immediateSeeds + ', ' + want.realCost + ', ' + want.skipValue + ')'
     );
   });
 
   var greedyChoice = pickGreedyDirection(board, used);
-  assert(greedyChoice === 'NE', 'Greedy blows NE, minimizing immediate count, self-destructively seeding all 5 in-doubt squares (got ' + greedyChoice + ')');
+  assert(greedyChoice === 'NE',
+    'Greedy Wind blows NE — it only minimizes new seeds this gust, so it seeds all 5 squares still in doubt and ' +
+    'hands them straight to the Dandelions (got ' + greedyChoice + ')');
 
   var smartChoice = chooseSmartDirection(board, available, blowWind);
-  assert(smartChoice === 'SE', 'Smart Wind reserves NE (skipValue 5) and blows SE (realCost 0, beats SW on direction-order tie-break) (got ' + smartChoice + ')');
+  assert(smartChoice === 'SE',
+    'Smart Wind reserves NE (that would save 5 squares still in doubt) and blows SE instead (0 of those squares ' +
+    'at risk; SE wins the tie-break over SW) (got ' + smartChoice + ')');
 }
 
 test1();
