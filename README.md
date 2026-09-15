@@ -12,7 +12,7 @@ You play the Dandelions against the Wind (computer). Each round you plant one fl
 
 ## Features
 
-- Single player vs computer Wind (Easy or Hard difficulty)
+- Single player vs computer Wind (Easy, Hard, or Expert difficulty)
 - Interactive 3-round tutorial
 - Responsive SVG interface — works on phone, tablet, or desktop
 - No accounts, no ads, no tracking
